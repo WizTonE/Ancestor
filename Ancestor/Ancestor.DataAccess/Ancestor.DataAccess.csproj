@@ -1,0 +1,171 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{E94FB95F-A5C1-4DBD-AAD0-25810A531FF9}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Ancestor.DataAccess</RootNamespace>
+    <AssemblyName>Ancestor.DataAccess</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'RC|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\RC\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;RC</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Beta|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\Beta\</OutputPath>
+    <DefineConstants>TRACE;DEBUG;BETA</DefineConstants>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <ErrorReport>prompt</ErrorReport>
+    <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="MySql.Data, Version=5.0.9.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d, processorArchitecture=MSIL">
+      <HintPath>..\packages\MySql.Data.5.0.9\lib\net\MySql.Data.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Oracle.DataAccess, Version=2.102.2.20, Culture=neutral, PublicKeyToken=89b483f429c47342, processorArchitecture=x86">
+      <HintPath>..\packages\Oracle.DataAccess.x86.2.102.2.20\lib\Oracle.DataAccess.dll</HintPath>
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>C:\Windows\assembly\GAC_32\Oracle.DataAccess\2.102.2.20__89b483f429c47342\Oracle.DataAccess.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Transactions" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="1.Connections\BaseDbAbstractConnection.cs" />
+    <Compile Include="5.Interface\IConnection.cs" />
+    <Compile Include="1.Connections\MsSqlDBConnection.cs" />
+    <Compile Include="1.Connections\MySqlDbConnection.cs" />
+    <Compile Include="3.DAO\BaseAbstractDao.cs" />
+    <Compile Include="3.DAO\ExpressionExtensions.cs" />
+    <Compile Include="3.DAO\DataAccessObject.cs" />
+    <Compile Include="3.DAO\LambdaExpressionHelper.cs" />
+    <Compile Include="3.DAO\MSSqlDao.cs" />
+    <Compile Include="3.DAO\MySqlDao.cs" />
+    <Compile Include="3.DAO\OracleDao.cs" />
+    <Compile Include="4.DBAction\BaseAbstractAction.cs" />
+    <Compile Include="4.DBAction\DbAction.cs" />
+    <Compile Include="4.DBAction\ActionFactory.cs" />
+    <Compile Include="4.DBAction\Mapper\CommandDefinition.cs" />
+    <Compile Include="4.DBAction\Mapper\CommandFlags.cs" />
+    <Compile Include="4.DBAction\Mapper\DataTableHandler.cs" />
+    <Compile Include="4.DBAction\Mapper\DbString.cs" />
+    <Compile Include="4.DBAction\Mapper\DefaultTypeMap.cs" />
+    <Compile Include="4.DBAction\Mapper\DynamicParameters.CachedOutputSetters.cs" />
+    <Compile Include="4.DBAction\Mapper\DynamicParameters.cs" />
+    <Compile Include="4.DBAction\Mapper\DynamicParameters.ParamInfo.cs" />
+    <Compile Include="4.DBAction\Mapper\ExplicitConstructorAttribute.cs" />
+    <Compile Include="4.DBAction\Mapper\FeatureSupport.cs" />
+    <Compile Include="4.DBAction\Mapper\SimpleMemberMap.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlDataRecordHandler.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlDataRecordListTVPParameter.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.Async.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.CacheInfo.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.DapperRow.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.DapperRowMetaObject.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.DapperTable.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.DeserializerState.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.DontMap.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.GridReader.Async.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.GridReader.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.ICustomQueryParameter.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.IDataReader.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.Identity.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.IDynamicParameters.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.IMemberMap.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.IParameterCallbacks.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.IParameterLookup.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.ITypeHandler.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.ITypeMap.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.Link.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.LiteralToken.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.Settings.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.TypeDeserializerCache.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.TypeHandler.cs" />
+    <Compile Include="4.DBAction\Mapper\SqlMapper.TypeHandlerCache.cs" />
+    <Compile Include="4.DBAction\Mapper\TableValuedParameter.cs" />
+    <Compile Include="4.DBAction\Mapper\TypeExtensions.cs" />
+    <Compile Include="4.DBAction\Mapper\UdtTypeHandler.cs" />
+    <Compile Include="4.DBAction\Mapper\WrappedDataReader.cs" />
+    <Compile Include="4.DBAction\Mapper\WrappedReader.cs" />
+    <Compile Include="4.DBAction\Mapper\XmlHandlers.cs" />
+    <Compile Include="4.DBAction\MySqlAction.cs" />
+    <Compile Include="4.DBAction\MSSqlAction.cs" />
+    <Compile Include="2.Factory\DAOFactory.cs" />
+    <Compile Include="2.Factory\DAOFactoryBase.cs" />
+    <Compile Include="2.Factory\DBConnection.cs" />
+    <Compile Include="4.DBAction\OracleAction.cs" />
+    <Compile Include="2.Factory\ConnectionFactory.cs" />
+    <Compile Include="1.Connections\OracleDBConnection.cs" />
+    <Compile Include="5.Interface\IDAOFactory.cs" />
+    <Compile Include="5.Interface\IDataAccessObject.cs" />
+    <Compile Include="5.Interface\IDbAction.cs" />
+    <Compile Include="5.Interface\IDBConnection.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="packages.config">
+      <SubType>Designer</SubType>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Ancestor.Core\Ancestor.Core.csproj">
+      <Project>{0b08a6f8-554f-48d4-8944-38e7af2fe060}</Project>
+      <Name>Ancestor.Core</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>

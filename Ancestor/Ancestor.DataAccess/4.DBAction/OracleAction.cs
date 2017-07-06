@@ -1,0 +1,399 @@
+﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Data;
+using System.Data.SqlTypes;
+using Ancestor.Core;
+using Ancestor.DataAccess.Factory;
+using Oracle.DataAccess.Client;
+using Oracle.DataAccess.Types;
+using System.Text;
+using System.Reflection;
+using System.Linq;
+using System.Linq.Expressions;
+using Ancestor.DataAccess.SqlMapper;
+using Ancestor.DataAccess.Interface;
+
+namespace Ancestor.DataAccess.DBAction
+{
+    /// <summary>
+    /// Creator : Andycow0 
+    /// Date    : 2015/07/28
+    /// Subject : Oracle Action
+    /// 
+    /// History : 
+    /// 2015/07/28 WizTonE 建立
+    /// 2015/09/01 Andycow0, 因發現 delete 時, 未回傳影響欄位數量, 而增加 ExecuteNonQuery 回傳 effectRows 的值
+    /// 2016/04/05 Andycow0  1. 新增 Transaction 功能，包括 DbCommit 與 DbRollBack 方法. 
+    ///                      2. 並取消 ExecuteNonQuery 中的 DbConnection.Close() 功能.
+    /// 2016/09-14 Andycow0  Added IDbConnection for returning Connection of DB.
+    /// </summary>
+    public class OracleAction : DbAction, IDbAction
+    {
+        OracleConnection DbConnection { get; set; }
+        OracleCommand DbCommand { get; set; }
+        OracleDataAdapter adapter { get; set; }
+        //
+        IDbTransaction DbTransaction { get; set; }
+        //
+        string testString { get; set; }
+        public IDbConnection DBConnection
+        {
+            get { return DbConnection; }
+        }
+        public override string DbCommandString
+        {
+            get { return DbCommand?.CommandText; }
+        }
+        public override bool IsTransacting
+        {
+            get { return DbTransaction != null; }
+        }
+        public IDbConnection GetConnectionFactory()
+        {
+            IDBConnection conn = new ConnectionFactory(DbObject);
+            DbConnection = (OracleConnection)conn.GetConnectionFactory().GetConnectionObject();
+            return DbConnection;
+        }
+
+        public bool CheckConnectionState()
+        {
+            throw new NotImplementedException();
+        }
+
+        public OracleAction()
+        {
+
+        }
+
+        public OracleAction(DBObject _dBObject)
+        {
+            DbObject = _dBObject;
+            //DbConnection = (OracleConnection)GetConnectionFactory();
+            testString = "select 1 from dual";
+        }
+
+        public bool Query(string sqlString, ICollection parameterCollection, ref DataTable dataTable)
+        {
+            bool is_success = false;
+            ErrorMessage = string.Empty;
+            DbCommand = DbConnection.CreateCommand();
+            DbCommand.CommandText = sqlString;
+            adapter = new OracleDataAdapter();
+            //DbCommand.BindByName = true;
+            //DbCommand.AddRowid = true;
+
+            if (CheckConnection(DbConnection, DbCommand, testString))
+            {
+                try
+                {
+                    var parameters = (List<OracleParameter>)parameterCollection;
+                    DbCommand.Parameters.AddRange(parameters.ToArray());
+                    adapter.SelectCommand = DbCommand;
+                    adapter.Fill(dataTable);
+                    is_success = true;
+                }
+                catch (Exception exception)
+                {
+                    is_success = false;
+                    ErrorMessage = exception.ToString();
+                }
+            }
+            CloseConnection();
+            return is_success;
+        }
+
+        public bool Query<T>(string sqlString, object parameterCollection, ref List<T> dataList) where T : class, new()
+        {
+            bool is_success = false;
+            ErrorMessage = string.Empty;
+            DbCommand = DbConnection.CreateCommand();
+            DbCommand.CommandText = sqlString;
+            adapter = new OracleDataAdapter();
+            //DbCommand.BindByName = true;
+            //DbCommand.AddRowid = true;
+
+            if (CheckConnection(DbConnection, DbCommand, testString))
+            {
+                try
+                {
+                    //var parameters = (IEnumerable)parameterCollection;
+                    dataList = DBConnection.QueryMultiple(sqlString, parameterCollection).Read<T>().ToList();
+                    is_success = true;
+                }
+                catch (Exception exception)
+                {
+                    is_success = false;
+                    ErrorMessage = exception.ToString();
+                }
+            }
+            CloseConnection();
+            return is_success;
+        }
+
+        public bool ExecuteNonQuery(string sqlString, ICollection parameterCollection, ref int effectRows)
+        {
+            bool isSuccessful = false;
+            ErrorMessage = string.Empty;
+            DbCommand = DbConnection.CreateCommand();
+            DbCommand.CommandText = sqlString;
+            //DbCommand.BindByName = true;
+            DbCommand.AddRowid = true;
+
+            if (CheckConnection(DbConnection, DbCommand, testString))
+            {
+                // 2016-05-23 Commend.
+                //if (DbTransaction == null)
+                //{
+                //    DbTransaction = DbConnection.BeginTransaction();
+                //}
+                //
+                try
+                {
+                    var parameters = (List<OracleParameter>)parameterCollection;
+                    DbCommand.Parameters.AddRange(parameters.ToArray());
+                    DbCommand.CommandText = sqlString;
+
+                    // 2015-09-01
+                    //DbCommand.ExecuteNonQuery();
+                    effectRows = DbCommand.ExecuteNonQuery();
+                    isSuccessful = true;
+                }
+                catch (Exception exception)
+                {
+                    // 2016-05-23 Commend.
+                    //DbTransaction.Rollback();
+                    isSuccessful = false;
+                    ErrorMessage = exception.ToString();
+                }
+            }
+            // 2016-04-05 commend this line for transaction feature.
+            CloseConnection();
+            return isSuccessful;
+        }
+
+        public bool ExecuteStoredProcedure(string procedureName, bool bindbyName, ICollection parameterCollection, List<DBParameter> dBParameter)
+        {
+            bool is_success = false;
+            ErrorMessage = string.Empty;
+            DbCommand = DbConnection.CreateCommand();
+            DbCommand.CommandText = procedureName;
+            DbCommand.CommandType = CommandType.StoredProcedure;
+            DbCommand.BindByName = bindbyName;
+            //DbCommand.AddRowid = true;
+
+            if (CheckConnection(DbConnection, DbCommand, testString))
+            {
+                try
+                {
+                    var parameters = (List<OracleParameter>)parameterCollection;
+                    DbCommand.Parameters.AddRange(parameters.ToArray());
+                    DbCommand.ExecuteNonQuery();
+                    is_success = true;
+
+                    foreach (DBParameter Parameter in dBParameter)
+                    {
+                        if (Parameter.ParameterDirection == ParameterDirection.Output)
+                        {
+                            foreach (OracleParameter OPara in DbCommand.Parameters)
+                            {
+                                if (OPara.Direction == ParameterDirection.Output)
+                                {
+                                    if (OPara.ParameterName == Parameter.Name)
+                                    {
+                                        if (OPara.OracleDbType == OracleDbType.RefCursor)
+                                        {
+                                            adapter = new OracleDataAdapter(DbCommand);
+                                            DataTable dt = new DataTable("Result");
+                                            adapter.Fill(dt, (OracleRefCursor)OPara.Value);
+                                            Parameter.Value = dt;
+                                        }
+                                        else
+                                            Parameter.Value = OPara.Value;
+                                    }
+                                }
+                            }
+                        }
+                        if (Parameter.ParameterDirection == ParameterDirection.InputOutput)
+                        {
+                            foreach (OracleParameter OPara in DbCommand.Parameters)
+                            {
+                                if (OPara.Direction == ParameterDirection.InputOutput)
+                                {
+                                    if (OPara.ParameterName == Parameter.Name)
+                                    {
+                                        if (OPara.OracleDbType == OracleDbType.RefCursor)
+                                        {
+                                            adapter = new OracleDataAdapter(DbCommand);
+                                            DataTable dt = new DataTable("Result");
+                                            adapter.Fill(dt, (OracleRefCursor)OPara.Value);
+                                            Parameter.Value = dt;
+                                        }
+                                        else
+                                            Parameter.Value = OPara.Value;
+                                    }
+                                }
+                            }
+                        }
+                        if (Parameter.ParameterDirection == ParameterDirection.ReturnValue)
+                        {
+                            foreach (OracleParameter OPara in DbCommand.Parameters)
+                            {
+                                if (OPara.Direction == ParameterDirection.ReturnValue)
+                                {
+                                    if (OPara.ParameterName == Parameter.Name)
+                                    {
+                                        if (OPara.OracleDbType == OracleDbType.RefCursor)
+                                        {
+                                            adapter = new OracleDataAdapter(DbCommand);
+                                            DataTable dt = new DataTable("Result");
+                                            adapter.Fill(dt, (OracleRefCursor)OPara.Value);
+                                            Parameter.Value = dt;
+                                        }
+                                        else
+                                            Parameter.Value = OPara.Value;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception exception)
+                {
+                    is_success = false;
+                    ErrorMessage = exception.ToString();
+                }
+            }
+            CloseConnection();
+            return is_success;
+        }
+
+        // 2016-04-05 Add feature for transaction.
+        public void DbCommit()
+        {
+            if (DbTransaction != null)
+            {
+                DbTransaction.Commit();
+                DbTransaction = null;
+                CloseConnection();
+            }
+        }
+        public void DbRollBack()
+        {
+            if (DbTransaction != null)
+            {
+                DbTransaction.Rollback();
+                DbTransaction = null;
+                CloseConnection();
+            }
+        }
+
+        public bool BulkInsert<T>(List<T> objList, ref int effectRows) where T : class, IModel, new()
+        {
+            string table_name = string.Empty;
+            int loop_for = 0;
+            bool isSuccessful = false;
+            ErrorMessage = string.Empty;
+            StringBuilder sb = new StringBuilder();
+            StringBuilder sb2 = new StringBuilder();
+
+            if (objList.Count > 0)
+            {
+                loop_for = (int)Math.Ceiling(Math.Round((double)objList.Count / 30000, 10));
+                for (int i = 0; i < (loop_for); i++)
+                {
+                    if (CheckConnection(DbConnection, DbCommand, testString))
+                    {
+                        DbCommand = DbConnection.CreateCommand();
+                        DbCommand.BindByName = true;
+                        List<T> TempList = objList.GetRange(i * 30000, Math.Min(30000, objList.Count - i * 30000));
+                        //ArrayBindCount一定要填入, 否則會跳ora-01404 insert value too large for column
+                        DbCommand.ArrayBindCount = TempList.Count;
+                        //if (sb.Length == 0 && sb2.Length == 0)
+                        //{
+                        foreach (PropertyInfo prop in TempList[0].GetType().GetProperties())
+                        {
+                            table_name = TempList[0].GetType().Name;
+                            if (prop.Name != "ROWID")
+                            {
+                                sb.Append(prop.Name.ToUpper() + ",");
+                                sb2.Append(":" + prop.Name.ToUpper() + ",");
+
+                                var propertyType = prop.PropertyType;
+                                if (prop.PropertyType.IsGenericType &&
+                                        prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                                    propertyType = prop.PropertyType.GetGenericArguments()[0];
+                                var ttt = prop.GetType();
+                                var expression = DynamicSelect<T, dynamic>(prop);
+                                var valueList = TempList.Select(expression).ToArray();
+
+                                DbCommand.Parameters.Add(":" + prop.Name.ToUpper(), OracleDbType.Varchar2, valueList, ParameterDirection.Input);
+                            }
+                        }
+                        sb.Remove(sb.Length - 1, 1);
+                        sb2.Remove(sb2.Length - 1, 1);
+                        try
+                        {
+                            DbCommand.CommandText = "INSERT INTO " + table_name + " (" + sb + ")" + " values (" + sb2 + ")";
+                            //}
+                            effectRows += DbCommand.ExecuteNonQuery();
+                            isSuccessful = true;
+                        }
+                        catch (Exception exception)
+                        {
+                            isSuccessful = false;
+                            ErrorMessage = exception.ToString();
+                        }
+
+                        sb.Clear();
+                        sb2.Clear();
+                    }
+                }
+                CloseConnection();
+            }
+            return isSuccessful;
+        }
+
+        //private Func<TItem, object> SelectExpression<TItem, TField>(string fieldName)
+        //{
+
+        //    var param = Expression.Parameter(typeof(TItem), "item");
+        //    var field = Expression.Property(param, fieldName);
+        //    return Expression.Lambda<Func<TItem, object>>(field, new ParameterExpression[] { param }).Compile();
+
+        //}
+
+        private Func<TEntity, object> DynamicSelect<TEntity, TField>(PropertyInfo prop) where TEntity : class, new()
+        {
+            var parameterExpression = Expression.Parameter(typeof(TEntity), "x");
+            var memberExpression = Expression.PropertyOrField(parameterExpression, prop.Name);
+            var memberExpressionConversion = Expression.Convert(memberExpression, typeof(object));
+            var lambda = Expression.Lambda<Func<TEntity, object>>(memberExpressionConversion, parameterExpression).Compile();
+            return lambda;
+        }
+
+        public IDbTransaction BeginTransaction()
+        {
+            if (CheckConnection(DbConnection, DbCommand, testString))
+            {
+                DbTransaction = DbConnection.BeginTransaction();
+            }
+            return DbTransaction;
+        }
+
+        public IDbTransaction BeginTransaction(IsolationLevel isolationLevel)
+        {
+            if (CheckConnection(DbConnection, DbCommand, testString))
+            {
+                DbTransaction = DbConnection.BeginTransaction(isolationLevel);
+            }
+            return DbTransaction;
+        }
+        private void CloseConnection()
+        {
+            if (DbTransaction == null)
+                DbConnection.Close();
+        }
+
+    }
+}
