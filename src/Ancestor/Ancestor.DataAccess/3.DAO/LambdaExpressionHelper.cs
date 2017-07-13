@@ -21,6 +21,7 @@ namespace Ancestor.DataAccess.DAO
         private int? _skip = null;
         private int? _take = null;
         private string _whereClause = string.Empty;
+        private Dictionary<Type, Type> _typeMapping;
 
         private string _Symbolizer { get; set; }
         private string _Connector { get; set; }
@@ -95,13 +96,14 @@ namespace Ancestor.DataAccess.DAO
             }
         }
 
-        public LambdaExpressionHelper(string Symbolizer, string Connector)
+        public LambdaExpressionHelper(string Symbolizer, string Connector, Dictionary<Type, Type> typeMapping = null)
         {
             _Symbolizer = Symbolizer;
             _Connector = Connector;
             Parameters = new List<DBParameter>();
             _SelectProperties = new List<string>();
             parameterCount = 0;
+            _typeMapping = typeMapping;
         }
 
         public string Translate(Expression expression)
@@ -844,8 +846,10 @@ namespace Ancestor.DataAccess.DAO
         {
             if (m.Expression != null && m.Expression.NodeType == ExpressionType.Parameter)
             {
-                sb.Append(m.Expression.Type.Name + "." + m.Member.Name);
-                _SelectProperties.Add(m.Expression.Type.Name + "." + m.Member.Name);
+                Type type = _typeMapping != null && _typeMapping.ContainsKey(m.Expression.Type) ? _typeMapping[m.Expression.Type] : m.Expression.Type;
+
+                sb.Append(type.Name + "." + m.Member.Name);
+                _SelectProperties.Add(type.Name + "." + m.Member.Name);
                 //parameterString = _Symbolizer + m.Member.Name;
                 parameterString = _Symbolizer + parameterCount.ToString();
                 //parameterCount++;

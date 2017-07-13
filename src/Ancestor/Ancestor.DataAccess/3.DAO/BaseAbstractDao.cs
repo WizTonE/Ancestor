@@ -28,26 +28,42 @@ namespace Ancestor.DataAccess.DAO
         {
             throw new NotImplementedException();
         }
-        protected virtual AncestorResult BulkInsert<T>(List<T> ObjList)
+        protected virtual AncestorResult BulkInsert<T>(List<T> ObjList) where T : class, IModel, new()
         {
             throw new NotImplementedException();
         }
         #endregion
 
         #region Function: Read
+        #region :Sql string
         protected virtual AncestorResult Query(string sqlString, object paramsObjects)
         {
             throw new NotImplementedException();
         }
+        #endregion
+        #region :IModel
         protected virtual AncestorResult Query<T>(IModel objectModel) where T : class, new()
         {
             throw new NotImplementedException();
         }
+        
 
         protected virtual AncestorResult QueryNoRowid<T>(IModel objectModel) where T : class, new()
         {
             throw new NotImplementedException();
         }
+        protected virtual AncestorResult Query(IModel objectModel)
+        {
+            throw new NotImplementedException();
+        }
+
+        protected virtual AncestorResult QueryNoRowid(IModel objectModel)
+        {
+            throw new NotImplementedException();
+        }
+        #endregion
+        #region :Expression
+        #region ::GenericType
         protected virtual AncestorResult Query<T>(Expression<Func<T, bool>> predicate) where T : class, new()
         {
             throw new NotImplementedException();
@@ -82,20 +98,41 @@ namespace Ancestor.DataAccess.DAO
         {
             throw new NotImplementedException();
         }
-
-        protected virtual AncestorResult Query(IModel objectModel)
-        {
-            throw new NotImplementedException();
-        }
         protected virtual AncestorResult QueryNoRowid<T>(Expression<Func<T, bool>> predicate) where T : class, new()
         {
             throw new NotImplementedException();
         }
 
-        protected virtual AncestorResult QueryNoRowid(IModel objectModel)
+        #endregion
+        #region ::FakeType
+        protected virtual AncestorResult Query<FakeType>(Expression<Func<FakeType, bool>> predicate, Type realType) where FakeType : class, new()
         {
             throw new NotImplementedException();
         }
+
+        protected virtual AncestorResult Query<FakeType>(Expression<Func<FakeType, bool>> predicate, Expression<Func<FakeType, object>> selectCondition, Type realType) where FakeType : class, new()
+        {
+            throw new NotImplementedException();
+        }
+
+        protected virtual AncestorResult Query<FakeType1, FakeType2>(Expression<Func<FakeType1, FakeType2, bool>> predicate, Expression<Func<FakeType1, FakeType2, object>> selectCondition, Type realType1, Type realType2 = null)
+            where FakeType1 : class, new()
+            where FakeType2 : class, new()
+        {
+            throw new NotImplementedException();
+        }
+
+        protected virtual AncestorResult Query<FakeType1, FakeType2, FakeType3>(Expression<Func<FakeType1, FakeType2, FakeType3, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, object>> selectCondition, Type realType1, Type realType2 = null, Type realType3 = null)
+            where FakeType1 : class, new()
+            where FakeType2 : class, new()
+            where FakeType3 : class, new()
+        {
+            throw new NotImplementedException();
+        }
+
+        #endregion
+        #endregion
+
         #endregion
 
         #region Function: Update
@@ -182,7 +219,7 @@ namespace Ancestor.DataAccess.DAO
         }
 
 
-        AncestorResult IDataAccessObject.BulkInsert<T>(List<T> ObjList)
+        AncestorResult IDataAccessObject.BulkInsert<T>(List<T> ObjList) 
         {
             return BulkInsert<T>(ObjList);
         }
@@ -275,7 +312,25 @@ namespace Ancestor.DataAccess.DAO
         {
             return Query(predicate, selectCondition);
         }
+        AncestorResult IDataAccessObject.Query<FakeType>(Expression<Func<FakeType, bool>> predicate, Type realType) 
+        {
+            return Query(predicate, realType);
+        }
 
+        AncestorResult IDataAccessObject.Query<FakeType>(Expression<Func<FakeType, bool>> predicate, Expression<Func<FakeType, object>> selectCondition, Type realType)
+        {
+            return Query(predicate, realType);
+        }
+
+        AncestorResult IDataAccessObject.Query<FakeType1, FakeType2>(Expression<Func<FakeType1, FakeType2, bool>> predicate, Expression<Func<FakeType1, FakeType2, object>> selectCondition, Type realType1, Type realType2 = null)
+        {
+            return Query(predicate, selectCondition);
+        }
+
+        AncestorResult IDataAccessObject.Query<FakeType1, FakeType2, FakeType3>(Expression<Func<FakeType1, FakeType2, FakeType3, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, object>> selectCondition, Type realType1, Type realType2 = null, Type realType3 = null)
+        {
+            return Query(predicate, selectCondition);
+        }
         AncestorResult IDataAccessObject.Query(IModel objectModel)
         {
             return Query(objectModel);
@@ -330,6 +385,8 @@ namespace Ancestor.DataAccess.DAO
         {
             return UpdateAll<T>(valueObject, predicate);
         }
+
+       
         #endregion
 
     }

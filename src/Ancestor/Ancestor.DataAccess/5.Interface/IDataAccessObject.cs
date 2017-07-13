@@ -20,19 +20,39 @@ namespace Ancestor.DataAccess.DAO
     public interface IDataAccessObject
     {
         IDbAction GetActionFactory();
+        #region Function: Query
+        #region :Sql string
+        AncestorResult Query(string sqlString, object paramsObjects);
+        #endregion
+
+        #region :IModel
+        AncestorResult Query(IModel objectModel);
         AncestorResult Query<T>(IModel objectModel) where T : class, IModel, new();
+        AncestorResult QueryNoRowid(IModel objectModel);
+        AncestorResult QueryNoRowid<T>(IModel objectModel) where T : class, IModel, new();
+        #endregion
+
+        #region :Expression
+        #region ::GenericType
         AncestorResult Query<T>(Expression<Func<T, bool>> predicate) where T : class, new();
         AncestorResult Query<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> selectCondition) where T : class, new();
         AncestorResult Query<T1, T2>(Expression<Func<T1, T2, bool>> predicate, Expression<Func<T1, T2, object>> selectCondition) where T1 : class, new() where T2 : class, new();
         AncestorResult Query<T1, T2, T3>(Expression<Func<T1, T2, T3, bool>> predicate, Expression<Func<T1, T2, T3, object>> selectCondition) where T1 : class, new() where T2 : class, new() where T3 : class, new();
         AncestorResult Query<T1, T2, T3, T4>(Expression<Func<T1, T2, T3, T4, bool>> predicate, Expression<Func<T1, T2, T3, T4, object>> selectCondition) where T1 : class, new() where T2 : class, new() where T3 : class, new() where T4 : class, new();
-        AncestorResult Query<T1, T2, T3, T4, T5>(Expression<Func<T1, T2, T3, T4, T5, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, object>> selectCondition) where T1 : class, new() where T2 : class, new() where T3 : class, new() where T4 : class, new() where T5 : class, new();
-        AncestorResult Query<T1, T2, T3, T4, T5, T6>(Expression<Func<T1, T2, T3, T4, T5, T6, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, T6, object>> selectCondition) where T1 : class, new() where T2 : class, new() where T3 : class, new() where T4 : class, new() where T5 : class, new() where T6 : class, new();
-        AncestorResult Query(IModel objectModel);
-        AncestorResult Query(string sqlString, object paramsObjects);
-        AncestorResult QueryNoRowid<T>(IModel objectModel) where T : class, IModel, new();
+        AncestorResult Query<T1, T2, T3, T4, T5>(Expression<Func<T1, T2, T3, T4, T5, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, object>> selectCondition) where T1 : class, new() where T2 : class, new() where T3 : class, new() where T4 : class, new() where T5 : class, new();        AncestorResult Query<T1, T2, T3, T4, T5, T6>(Expression<Func<T1, T2, T3, T4, T5, T6, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, T6, object>> selectCondition) where T1 : class, new() where T2 : class, new() where T3 : class, new() where T4 : class, new() where T5 : class, new() where T6 : class, new();
         AncestorResult QueryNoRowid<T>(Expression<Func<T, bool>> predicate) where T : class, new();
-        AncestorResult QueryNoRowid(IModel objectModel);
+        #endregion
+        #region ::FakeType
+        AncestorResult Query<FakeType>(Expression<Func<FakeType, bool>> predicate, Type realType) where FakeType : class, new();
+        AncestorResult Query<FakeType>(Expression<Func<FakeType, bool>> predicate, Expression<Func<FakeType, object>> selectCondition, Type realType) where FakeType : class, new();
+        AncestorResult Query<FakeType1, FakeType2>(Expression<Func<FakeType1, FakeType2, bool>> predicate, Expression<Func<FakeType1, FakeType2, object>> selectCondition, Type realType1, Type realType2 = null) where FakeType1 : class, new() where FakeType2 : class, new();
+        AncestorResult Query<FakeType1, FakeType2, FakeType3>(Expression<Func<FakeType1, FakeType2, FakeType3, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, object>> selectCondition, Type realType1, Type realType2 = null, Type realType3 = null) where FakeType1 : class, new() where FakeType2 : class, new() where FakeType3 : class, new();
+        #endregion
+        #endregion
+        #endregion
+
+
+
         AncestorResult Insert(IModel objectModel);
         AncestorResult Update(IModel valueObject, object paramsObjects);
         AncestorResult Update(IModel valueObject, IModel whereObject);
@@ -43,6 +63,7 @@ namespace Ancestor.DataAccess.DAO
         AncestorResult Delete<T>(Expression<Func<T, bool>> predicate) where T : class, new();
         AncestorResult ExecuteNonQuery(string sqlString, object modelObject);
         AncestorResult ExecuteStoredProcedure(string procedureName, bool bindbyName, List<DBParameter> dBParameter);
+
         // 2016-04-05 Add for transaction.
         // 2016-05-23 Commend.
         //void SaveChange();

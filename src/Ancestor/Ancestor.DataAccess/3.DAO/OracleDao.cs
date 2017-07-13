@@ -17,7 +17,8 @@ namespace Ancestor.DataAccess.DAO
     // 2015-10-22 1. GetDbType() 加入 SYSTEM.DATETIME 型態的轉換
     // 2016-02-08 1. Add feature for Dispose. 2. 修改取得DbType的方法, 改為 Dictionary 方式取得
     // 2016-04-05 Add feature SaveChange and CancellChange for transaction.
-    public class OracleDao : DataAccessObject, IDataAccessObject
+    // 2017-07-13 修正為繼承BasweAbstractDao
+    public class OracleDao : BaseAbstractDao, IDataAccessObject
     {
         Dictionary<string, OracleDbType> _OracleDbTypeDic;
         public OracleDao()
@@ -115,7 +116,7 @@ namespace Ancestor.DataAccess.DAO
             return SqlStr.ToString();
         }
 
-        public AncestorResult Query<T>(IModel objectModel) where T : class, IModel, new()
+        protected override AncestorResult Query<T>(IModel objectModel)
         {
             var SqlString = new StringBuilder();
             var isSuccess = false;
@@ -147,7 +148,7 @@ namespace Ancestor.DataAccess.DAO
 
             return returnResult;
         }
-        public AncestorResult QueryNoRowid<T>(IModel objectModel) where T : class, IModel, new()
+        protected override AncestorResult QueryNoRowid<T>(IModel objectModel)
         {
             var SqlString = new StringBuilder();
             var isSuccess = false;
@@ -180,7 +181,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        public AncestorResult Query<T>(Expression<Func<T, bool>> predicate) where T : class, new()
+        protected override AncestorResult Query<FakeType>(Expression<Func<FakeType, bool>> predicate, Type realType)
         {
             string whereString = string.Empty;
             var isSuccess = false;
@@ -188,10 +189,12 @@ namespace Ancestor.DataAccess.DAO
             var returnResult = new AncestorResult();
             var parameters = new List<OracleParameter>();
             var dataTable = new DataTable();
-            var dataList = new List<T>();
+            var dataList = new List<object>();
             var SqlString = new StringBuilder();
-
-            using (LambdaExpressionHelper helper = new LambdaExpressionHelper(DbSymbolize, DbLikeSymbolize))
+            var mapping = new Dictionary<Type, Type> {
+                { typeof(FakeType), realType }
+            };
+            using (LambdaExpressionHelper helper = new LambdaExpressionHelper(DbSymbolize, DbLikeSymbolize, mapping))
             {
 
                 try
@@ -199,9 +202,9 @@ namespace Ancestor.DataAccess.DAO
                     var rootExp = predicate.Body as Expression;
                     whereString = helper.Translate(rootExp);
                     var Parameters = helper.Parameters;
-                    var tableName = new T().GetType().Name;
-
-                    SqlString.Append("SELECT " + GenerateSelectString(new T()) + " FROM " + tableName);
+                    var tableName = realType.Name;
+                    
+                    SqlString.Append("SELECT " + GenerateSelectString(Activator.CreateInstance(realType)) + " FROM " + tableName);
                     SqlString.Append(whereString);
 
                     var paras = from parameter in Parameters
@@ -232,7 +235,12 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        public AncestorResult QueryNoRowid<T>(Expression<Func<T, bool>> predicate) where T : class, new()
+        protected override AncestorResult Query<T>(Expression<Func<T, bool>> predicate) 
+        {
+            return Query(predicate, typeof(T));
+        }
+
+        protected override AncestorResult QueryNoRowid<T>(Expression<Func<T, bool>> predicate) 
         {
             string whereString = string.Empty;
             var isSuccess = false;
@@ -275,7 +283,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        public AncestorResult Query(IModel objectModel)
+        protected override AncestorResult Query(IModel objectModel)
         {
             var isSuccess = false;
             var sqlString = string.Empty;
@@ -309,7 +317,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        public AncestorResult QueryNoRowid(IModel objectModel)
+        protected override AncestorResult QueryNoRowid(IModel objectModel)
         {
             var isSuccess = false;
             var sqlString = string.Empty;
@@ -349,7 +357,7 @@ namespace Ancestor.DataAccess.DAO
         /// <param name="sqlString"></param>
         /// <param name="paramsObjects"></param>
         /// <returns></returns>
-        public AncestorResult Query(string sqlString, object paramsObjects)
+        protected override AncestorResult Query(string sqlString, object paramsObjects)
         {
             var isSuccess = false;
             var returnResult = new AncestorResult();
@@ -391,7 +399,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        public AncestorResult Insert(IModel objectModel)
+        protected override AncestorResult Insert(IModel objectModel)
         {
             var SqlString = new StringBuilder();
             var sqlValueString = new StringBuilder();
@@ -441,7 +449,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        public AncestorResult Update(IModel valueObject, object paramsObjects)
+        protected override AncestorResult Update(IModel valueObject, object paramsObjects)
         {
             var SqlString = new StringBuilder();
             var sb2 = new StringBuilder();
@@ -476,7 +484,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        public AncestorResult Update(IModel valueObject, IModel whereObject)
+        protected override AncestorResult Update(IModel valueObject, IModel whereObject)
         {
             var SqlString = new StringBuilder();
             var sb2 = new StringBuilder();
@@ -565,7 +573,7 @@ namespace Ancestor.DataAccess.DAO
 
         }
 
-        public AncestorResult Update<T>(IModel valueObject, Expression<Func<T, bool>> predicate) where T : class, new()
+        protected override AncestorResult Update<T>(IModel valueObject, Expression<Func<T, bool>> predicate) 
         {
             string whereString = string.Empty;
             var isSuccess = false;
@@ -610,7 +618,7 @@ namespace Ancestor.DataAccess.DAO
 
             return returnResult;
         }
-        public AncestorResult Delete(IModel whereObject)
+        protected override AncestorResult Delete(IModel whereObject)
         {
             var SqlString = new StringBuilder();
             //StringBuilder sb2 = new StringBuilder();
@@ -676,7 +684,7 @@ namespace Ancestor.DataAccess.DAO
             returnResult.IsSuccess = isSuccess;
             return returnResult;
         }
-        public AncestorResult Delete<T>(Expression<Func<T, bool>> predicate) where T : class, new()
+        protected override AncestorResult Delete<T>(Expression<Func<T, bool>> predicate) 
         {
             string whereString = string.Empty;
             var isSuccess = false;
@@ -717,7 +725,7 @@ namespace Ancestor.DataAccess.DAO
             returnResult.IsSuccess = isSuccess;
             return returnResult;
         }
-        public AncestorResult ExecuteNonQuery(string sqlString, object modelObject)
+        protected override AncestorResult ExecuteNonQuery(string sqlString, object modelObject)
         {
             var SqlString = new StringBuilder();
             SqlString.Append(sqlString);
@@ -764,7 +772,7 @@ namespace Ancestor.DataAccess.DAO
             returnResult.IsSuccess = isSuccess;
             return returnResult;
         }
-        public AncestorResult ExecuteStoredProcedure(string procedureName, bool bindbyName, List<DBParameter> dBParameter)
+        protected override AncestorResult ExecuteStoredProcedure(string procedureName, bool bindbyName, List<DBParameter> dBParameter)
         {
             var parameters = new List<OracleParameter>();
             var returnResult = new AncestorResult();
@@ -827,10 +835,6 @@ namespace Ancestor.DataAccess.DAO
             }
             returnResult.IsSuccess = isSuccess;
             return returnResult;
-        }
-        public IDbAction GetActionFactory()
-        {
-            return base.DB = ActionFactory.GetDBAction(DbObject);
         }
         private string UpdateTranslate(IModel valueObject, List<OracleParameter> parameters, UpdateMode mode)
         {
@@ -987,19 +991,7 @@ namespace Ancestor.DataAccess.DAO
             Dispose(false);
         }
 
-        // 2016-04-05 Add for transaction.
-        public void Commit()
-        {
-            DB.DbCommit();
-        }
-
-
-        public void Rollback()
-        {
-            DB.DbRollBack();
-        }
-
-        public AncestorResult BulkInsert<T>(List<T> objList) where T : class, IModel, new()
+        protected override AncestorResult BulkInsert<T>(List<T> objList) 
         {
             var SqlString = new StringBuilder();
             //var sqlValueString = new StringBuilder();
@@ -1025,25 +1017,13 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        public IDbTransaction BeginTransaction()
-        {
-            return DB.BeginTransaction();
-        }
-
-        public IDbTransaction BeginTransaction(IsolationLevel isoLationLevel)
-        {
-            return DB.BeginTransaction(isoLationLevel);
-        }
-        public AncestorResult Query<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> selectCondition)
-            where T : class, new()
+        protected override AncestorResult Query<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> selectCondition)           
         {
             var tableName = new T().GetType().Name;
 
             return QueryWithJoinCondition(predicate.Body, selectCondition.Body, tableName);
         }
-        public AncestorResult Query<T1, T2>(Expression<Func<T1, T2, bool>> predicate, Expression<Func<T1, T2, object>> selectCondition)
-            where T1 : class, new()
-            where T2 : class, new()
+        protected override AncestorResult Query<T1, T2>(Expression<Func<T1, T2, bool>> predicate, Expression<Func<T1, T2, object>> selectCondition)
         {
 
             var tableName = new T1().GetType().Name + "," + new T2().GetType().Name;
@@ -1051,46 +1031,28 @@ namespace Ancestor.DataAccess.DAO
             return QueryWithJoinCondition(predicate.Body, selectCondition.Body, tableName);
         }
 
-        public AncestorResult Query<T1, T2, T3>(Expression<Func<T1, T2, T3, bool>> predicate, Expression<Func<T1, T2, T3, object>> selectCondition)
-            where T1 : class, new()
-            where T2 : class, new()
-            where T3 : class, new()
+        protected override AncestorResult Query<T1, T2, T3>(Expression<Func<T1, T2, T3, bool>> predicate, Expression<Func<T1, T2, T3, object>> selectCondition)
         {
             var tableName = new T1().GetType().Name + "," + new T2().GetType().Name + "," + new T3().GetType().Name;
 
             return QueryWithJoinCondition(predicate.Body, selectCondition.Body, tableName);
         }
 
-        public AncestorResult Query<T1, T2, T3, T4>(Expression<Func<T1, T2, T3, T4, bool>> predicate, Expression<Func<T1, T2, T3, T4, object>> selectCondition)
-            where T1 : class, new()
-            where T2 : class, new()
-            where T3 : class, new()
-            where T4 : class, new()
+        protected override AncestorResult Query<T1, T2, T3, T4>(Expression<Func<T1, T2, T3, T4, bool>> predicate, Expression<Func<T1, T2, T3, T4, object>> selectCondition)
         {
             var tableName = new T1().GetType().Name + "," + new T2().GetType().Name + "," + new T3().GetType().Name + "," + new T4().GetType().Name;
 
             return QueryWithJoinCondition(predicate.Body, selectCondition.Body, tableName);
         }
 
-        public AncestorResult Query<T1, T2, T3, T4, T5>(Expression<Func<T1, T2, T3, T4, T5, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, object>> selectCondition)
-            where T1 : class, new()
-            where T2 : class, new()
-            where T3 : class, new()
-            where T4 : class, new()
-            where T5 : class, new()
+        protected override AncestorResult Query<T1, T2, T3, T4, T5>(Expression<Func<T1, T2, T3, T4, T5, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, object>> selectCondition)
         {
             var tableName = new T1().GetType().Name + "," + new T2().GetType().Name + "," + new T3().GetType().Name + "," + new T4().GetType().Name + "," + new T5().GetType().Name;
 
             return QueryWithJoinCondition(predicate.Body, selectCondition.Body, tableName);
         }
 
-        public AncestorResult Query<T1, T2, T3, T4, T5, T6>(Expression<Func<T1, T2, T3, T4, T5, T6, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, T6, object>> selectCondition)
-            where T1 : class, new()
-            where T2 : class, new()
-            where T3 : class, new()
-            where T4 : class, new()
-            where T5 : class, new()
-            where T6 : class, new()
+        protected override AncestorResult Query<T1, T2, T3, T4, T5, T6>(Expression<Func<T1, T2, T3, T4, T5, T6, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, T6, object>> selectCondition)
         {
             var tableName = new T1().GetType().Name + "," + new T2().GetType().Name + "," + new T3().GetType().Name + "," + new T4().GetType().Name + "," + new T5().GetType().Name + "," + new T6().GetType().Name;
 
@@ -1137,7 +1099,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        public AncestorResult UpdateAll(IModel valueObject, IModel whereObject)
+        protected override AncestorResult UpdateAll(IModel valueObject, IModel whereObject)
         {
             var SqlString = new StringBuilder();
             var sb2 = new StringBuilder();
@@ -1172,7 +1134,7 @@ namespace Ancestor.DataAccess.DAO
 
         }
 
-        public AncestorResult UpdateAll<T>(IModel valueObject, Expression<Func<T, bool>> predicate) where T : class, new()
+        protected override AncestorResult UpdateAll<T>(IModel valueObject, Expression<Func<T, bool>> predicate)
         {
             string whereString = string.Empty;
             var isSuccess = false;
