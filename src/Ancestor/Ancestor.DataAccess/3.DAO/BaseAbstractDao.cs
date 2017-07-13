@@ -46,7 +46,7 @@ namespace Ancestor.DataAccess.DAO
         {
             throw new NotImplementedException();
         }
-        
+
 
         protected virtual AncestorResult QueryNoRowid<T>(IModel objectModel) where T : class, new()
         {
@@ -130,6 +130,37 @@ namespace Ancestor.DataAccess.DAO
             throw new NotImplementedException();
         }
 
+        protected virtual AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4>(Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, object>> selectCondition, Type realType1, Type realType2 = null, Type realType3 = null, Type realType4 = null)
+            where FakeType1 : class, new()
+            where FakeType2 : class, new()
+            where FakeType3 : class, new()
+            where FakeType4 : class, new()
+        {
+            throw new NotImplementedException();
+        }
+
+        protected virtual AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5>(Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, object>> selectCondition, Type realType1, Type realType2 = null, Type realType3 = null, Type realType4 = null, Type realType5 = null)
+            where FakeType1 : class, new()
+            where FakeType2 : class, new()
+            where FakeType3 : class, new()
+            where FakeType4 : class, new()
+            where FakeType5 : class, new()
+        {
+            throw new NotImplementedException();
+        }
+
+        protected virtual AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6>(Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, object>> selectCondition, Type realType1, Type realType2 = null, Type realType3 = null, Type realType4 = null, Type realType5 = null, Type realType6 = null)
+            where FakeType1 : class, new()
+            where FakeType2 : class, new()
+            where FakeType3 : class, new()
+            where FakeType4 : class, new()
+            where FakeType5 : class, new()
+            where FakeType6 : class, new()
+        {
+            throw new NotImplementedException();
+        }
+
+
         #endregion
         #endregion
 
@@ -168,7 +199,7 @@ namespace Ancestor.DataAccess.DAO
             throw new NotImplementedException();
         }
 
-        protected virtual AncestorResult Delete<T>(Expression<Func<T, bool>> predicate) where T:class, new()
+        protected virtual AncestorResult Delete<T>(Expression<Func<T, bool>> predicate) where T : class, new()
         {
             throw new NotImplementedException();
         }
@@ -219,7 +250,7 @@ namespace Ancestor.DataAccess.DAO
         }
 
 
-        AncestorResult IDataAccessObject.BulkInsert<T>(List<T> ObjList) 
+        AncestorResult IDataAccessObject.BulkInsert<T>(List<T> ObjList)
         {
             return BulkInsert<T>(ObjList);
         }
@@ -250,12 +281,12 @@ namespace Ancestor.DataAccess.DAO
         {
             Dispose(disposing);
         }
-        
+
         AncestorResult IDataAccessObject.ExecuteNonQuery(string sqlString, object modelObject)
         {
             return ExecuteNonQuery(sqlString, modelObject);
         }
-       
+
         AncestorResult IDataAccessObject.ExecuteStoredProcedure(string procedureName, bool bindbyName, List<DBParameter> dBParameter)
         {
             return ExecuteStoredProcedure(procedureName, bindbyName, dBParameter);
@@ -312,24 +343,39 @@ namespace Ancestor.DataAccess.DAO
         {
             return Query(predicate, selectCondition);
         }
-        AncestorResult IDataAccessObject.Query<FakeType>(Expression<Func<FakeType, bool>> predicate, Type realType) 
+        AncestorResult IDataAccessObject.Query<FakeType>(Expression<Func<FakeType, bool>> predicate, Type realType)
         {
             return Query(predicate, realType);
         }
 
         AncestorResult IDataAccessObject.Query<FakeType>(Expression<Func<FakeType, bool>> predicate, Expression<Func<FakeType, object>> selectCondition, Type realType)
         {
-            return Query(predicate, realType);
+            return Query(predicate, selectCondition, realType);
         }
 
         AncestorResult IDataAccessObject.Query<FakeType1, FakeType2>(Expression<Func<FakeType1, FakeType2, bool>> predicate, Expression<Func<FakeType1, FakeType2, object>> selectCondition, Type realType1, Type realType2 = null)
         {
-            return Query(predicate, selectCondition);
+            return Query(predicate, selectCondition, realType1, realType2);
         }
 
-        AncestorResult IDataAccessObject.Query<FakeType1, FakeType2, FakeType3>(Expression<Func<FakeType1, FakeType2, FakeType3, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, object>> selectCondition, Type realType1, Type realType2 = null, Type realType3 = null)
+        AncestorResult IDataAccessObject.Query<FakeType1, FakeType2, FakeType3>(Expression<Func<FakeType1, FakeType2, FakeType3, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, object>> selectCondition, Type realType1, Type realType2, Type realType3)
         {
-            return Query(predicate, selectCondition);
+            return Query(predicate, selectCondition, realType1, realType2, realType3);
+        }
+
+        AncestorResult IDataAccessObject.Query<FakeType1, FakeType2, FakeType3, FakeType4>(Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, object>> selectCondition, Type realType1, Type realType2, Type realType3, Type realType4)
+        {
+            return Query(predicate, selectCondition, realType1, realType2, realType3, realType4);
+        }
+
+        AncestorResult IDataAccessObject.Query<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5>(Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, object>> selectCondition, Type realType1, Type realType2, Type realType3, Type realType4, Type realType5)
+        {
+            return Query(predicate, selectCondition, realType1, realType2, realType3, realType4, realType5);
+        }
+
+        AncestorResult IDataAccessObject.Query<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6>(Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, object>> selectCondition, Type realType1, Type realType2, Type realType3, Type realType4, Type realType5, Type realType6 )
+        {
+            return Query(predicate, selectCondition, realType1, realType2, realType3, realType4, realType5, realType6);
         }
         AncestorResult IDataAccessObject.Query(IModel objectModel)
         {
@@ -386,7 +432,9 @@ namespace Ancestor.DataAccess.DAO
             return UpdateAll<T>(valueObject, predicate);
         }
 
-       
+
+
+
         #endregion
 
     }

@@ -540,17 +540,37 @@ namespace Ancestor.DataAccess.DAO
             else if (m.Method.Name == "SelectAll")
             {
                 if (m.Arguments.Count > 0)
-                    _SelectProperties.Add(m.Arguments.First().Type.Name + ".*");
+                {
+                    var t = m.Arguments.First().Type;
+                    var type = _typeMapping != null && _typeMapping.ContainsKey(t) ? _typeMapping[t] : t;
+
+                    _SelectProperties.Add(GetSelectingString(type));
+                }
                 return m;
             }
             else
             {
-                
+
             }
-                
+
             return base.VisitMethodCall(m);
         }
-
+        private static string GetSelectingString(Type type)
+        {
+            List<string> names = new List<string>();
+            foreach (PropertyInfo prop in type.GetProperties())
+            {
+                var FindHardWord = prop.GetCustomAttributes(typeof(HardWordAttribute), false).Count();
+                //遇到HardWord要用rawtohex轉成byte傳出
+                var name = type.Name + "." + prop.Name;
+                if (FindHardWord > 0)
+                    names.Add("rawtohex(" + name + ") " + prop.Name);
+                else
+                    names.Add(name);
+            }
+            
+            return string.Join(", ", names);
+        }
         protected void SetParameter(MethodCallExpression m)
         {
             object Value;
@@ -864,7 +884,7 @@ namespace Ancestor.DataAccess.DAO
                     var field = (FieldInfo)m.Member;
                     value = field.GetValue(((ConstantExpression)m.Expression).Value);
                 }
-                else if(m.Member.MemberType == MemberTypes.Property)
+                else if (m.Member.MemberType == MemberTypes.Property)
                 {
                     var property = (PropertyInfo)m.Member;
                     value = property.GetValue(((ConstantExpression)m.Expression).Value, null);
@@ -918,7 +938,7 @@ namespace Ancestor.DataAccess.DAO
                 try
                 {
                     var m = (MemberExpression)e;
-                    var value = Expression.Lambda(m).Compile().DynamicInvoke();                    
+                    var value = Expression.Lambda(m).Compile().DynamicInvoke();
                     if (value != null && value.GetType().Name == "List`1")
                     {
                         var property = value.GetType().GetProperty("Count");
