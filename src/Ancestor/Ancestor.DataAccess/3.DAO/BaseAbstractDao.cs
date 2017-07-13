@@ -353,7 +353,7 @@ namespace Ancestor.DataAccess.DAO
             return Query(predicate, selectCondition, realType);
         }
 
-        AncestorResult IDataAccessObject.Query<FakeType1, FakeType2>(Expression<Func<FakeType1, FakeType2, bool>> predicate, Expression<Func<FakeType1, FakeType2, object>> selectCondition, Type realType1, Type realType2 = null)
+        AncestorResult IDataAccessObject.Query<FakeType1, FakeType2>(Expression<Func<FakeType1, FakeType2, bool>> predicate, Expression<Func<FakeType1, FakeType2, object>> selectCondition, Type realType1, Type realType2)
         {
             return Query(predicate, selectCondition, realType1, realType2);
         }
