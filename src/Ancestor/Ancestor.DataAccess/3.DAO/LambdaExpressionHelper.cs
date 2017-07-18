@@ -21,6 +21,7 @@ namespace Ancestor.DataAccess.DAO
         private int? _skip = null;
         private int? _take = null;
         private string _whereClause = string.Empty;
+        private Dictionary<Type, Type> _typeMapping;
 
         private string _Symbolizer { get; set; }
         private string _Connector { get; set; }
@@ -95,13 +96,14 @@ namespace Ancestor.DataAccess.DAO
             }
         }
 
-        public LambdaExpressionHelper(string Symbolizer, string Connector)
+        public LambdaExpressionHelper(string Symbolizer, string Connector, Dictionary<Type, Type> typeMapping = null)
         {
             _Symbolizer = Symbolizer;
             _Connector = Connector;
             Parameters = new List<DBParameter>();
             _SelectProperties = new List<string>();
             parameterCount = 0;
+            _typeMapping = typeMapping;
         }
 
         public string Translate(Expression expression)
@@ -538,17 +540,37 @@ namespace Ancestor.DataAccess.DAO
             else if (m.Method.Name == "SelectAll")
             {
                 if (m.Arguments.Count > 0)
-                    _SelectProperties.Add(m.Arguments.First().Type.Name + ".*");
+                {
+                    var t = m.Arguments.First().Type;
+                    var type = _typeMapping != null && _typeMapping.ContainsKey(t) ? _typeMapping[t] : t;
+
+                    _SelectProperties.Add(GetSelectingString(type));
+                }
                 return m;
             }
             else
             {
-                
+
             }
-                
+
             return base.VisitMethodCall(m);
         }
-
+        private static string GetSelectingString(Type type)
+        {
+            List<string> names = new List<string>();
+            foreach (PropertyInfo prop in type.GetProperties())
+            {
+                var FindHardWord = prop.GetCustomAttributes(typeof(HardWordAttribute), false).Count();
+                //遇到HardWord要用rawtohex轉成byte傳出
+                var name = type.Name + "." + prop.Name;
+                if (FindHardWord > 0)
+                    names.Add("rawtohex(" + name + ") " + prop.Name);
+                else
+                    names.Add(name);
+            }
+            
+            return string.Join(", ", names);
+        }
         protected void SetParameter(MethodCallExpression m)
         {
             object Value;
@@ -844,8 +866,10 @@ namespace Ancestor.DataAccess.DAO
         {
             if (m.Expression != null && m.Expression.NodeType == ExpressionType.Parameter)
             {
-                sb.Append(m.Expression.Type.Name + "." + m.Member.Name);
-                _SelectProperties.Add(m.Expression.Type.Name + "." + m.Member.Name);
+                Type type = _typeMapping != null && _typeMapping.ContainsKey(m.Expression.Type) ? _typeMapping[m.Expression.Type] : m.Expression.Type;
+
+                sb.Append(type.Name + "." + m.Member.Name);
+                _SelectProperties.Add(type.Name + "." + m.Member.Name);
                 //parameterString = _Symbolizer + m.Member.Name;
                 parameterString = _Symbolizer + parameterCount.ToString();
                 //parameterCount++;
@@ -860,7 +884,7 @@ namespace Ancestor.DataAccess.DAO
                     var field = (FieldInfo)m.Member;
                     value = field.GetValue(((ConstantExpression)m.Expression).Value);
                 }
-                else if(m.Member.MemberType == MemberTypes.Property)
+                else if (m.Member.MemberType == MemberTypes.Property)
                 {
                     var property = (PropertyInfo)m.Member;
                     value = property.GetValue(((ConstantExpression)m.Expression).Value, null);
@@ -913,7 +937,7 @@ namespace Ancestor.DataAccess.DAO
                 try
                 {
                     var m = (MemberExpression)e;
-                    var value = Expression.Lambda(m).Compile().DynamicInvoke();                    
+                    var value = Expression.Lambda(m).Compile().DynamicInvoke();
                     if (value != null && value.GetType().Name == "List`1")
                     {
                         var property = value.GetType().GetProperty("Count");
