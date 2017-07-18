@@ -409,6 +409,15 @@ namespace Ancestor.DataAccess.DAO
                         this.Visit(m.Object);
                         this.Write(")");
                         return m;
+                    case "ToString":
+                        this.Write("TO_CHAR(");
+                        this.Visit(m.Arguments[0]);
+                        this.Write(", '");
+                        var ex = m.Arguments.ElementAtOrDefault(1);                        
+                        var format = ex != null ? Expression.Lambda(ex).Compile().DynamicInvoke() ?? "YYYYMMDD" : "YYYYMMDD";
+                        this.Write(format);
+                        this.Write("')");                        
+                        return m;
                 }
             }
 
