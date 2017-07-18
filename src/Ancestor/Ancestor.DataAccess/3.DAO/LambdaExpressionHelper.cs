@@ -891,11 +891,10 @@ namespace Ancestor.DataAccess.DAO
                 if (exp.NodeType == ExpressionType.Constant)
                     return (exp.NodeType == ExpressionType.Constant && ((ConstantExpression)exp).Value == null);
                 else if (exp.NodeType == ExpressionType.MemberAccess)
-                {
+                {                    
                     var m = (MemberExpression)exp;
-                    if (m.Expression.NodeType == ExpressionType.Constant)
-                        return IsNullConstant((ConstantExpression)m.Expression);
-                    return IsNullConstant((MemberExpression)m.Expression);
+                    var value =  Expression.Lambda(m).Compile().DynamicInvoke();
+                    return value == null;
                 }
                 else
                     return IsNullConstant(((UnaryExpression)exp).Operand);
