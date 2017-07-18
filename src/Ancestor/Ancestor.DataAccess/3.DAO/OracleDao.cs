@@ -220,7 +220,7 @@ namespace Ancestor.DataAccess.DAO
                     }
                     dynamic eoDynamic = eo;
 
-                    isSuccess = DB.Query(SqlString.ToString(), eoDynamic, ref dataList);
+                    isSuccess = DB.Query(SqlString.ToString(), eoDynamic, ref dataList, realType);
                     returnResult.Message = DB.ErrorMessage;
                     returnResult.DataList = dataList;
                 }
@@ -237,7 +237,53 @@ namespace Ancestor.DataAccess.DAO
 
         protected override AncestorResult Query<T>(Expression<Func<T, bool>> predicate)
         {
-            return Query(predicate, typeof(T));
+            string whereString = string.Empty;
+            var isSuccess = false;
+            var sqlString = string.Empty;
+            var returnResult = new AncestorResult();
+            var parameters = new List<OracleParameter>();
+            var dataTable = new DataTable();
+            var dataList = new List<object>();
+            var SqlString = new StringBuilder();
+            using (LambdaExpressionHelper helper = new LambdaExpressionHelper(DbSymbolize, DbLikeSymbolize))
+            {
+
+                try
+                {
+                    var rootExp = predicate.Body as Expression;
+                    whereString = helper.Translate(rootExp);
+                    var Parameters = helper.Parameters;
+                    var tableName = new T().GetType().Name;
+
+                    SqlString.Append("SELECT " + GenerateSelectString(new T()) + " FROM " + tableName);
+                    SqlString.Append(whereString);
+
+                    var paras = from parameter in Parameters
+                                select new OracleParameter(parameter.Name, (OracleDbType)GetDbType(parameter.Type),
+                              parameter.Value, ParameterDirection.Input);
+                    parameters.AddRange(paras);
+
+                    var eo = new ExpandoObject();
+                    var eoColl = (ICollection<KeyValuePair<string, object>>)eo;
+                    foreach (var item in Parameters.ToDictionary(x => x.Name, x => x.Value))
+                    {
+                        eoColl.Add(item);
+                    }
+                    dynamic eoDynamic = eo;
+
+                    isSuccess = DB.Query(SqlString.ToString(), eoDynamic, ref dataList);
+                    returnResult.Message = DB.ErrorMessage;
+                    returnResult.DataList = dataList;
+                }
+                catch (Exception exception)
+                {
+                    returnResult.Message = exception.ToString();
+                    isSuccess = false;
+                }
+            }
+            returnResult.IsSuccess = isSuccess;
+
+            return returnResult;
         }
 
         protected override AncestorResult QueryNoRowid<T>(Expression<Func<T, bool>> predicate)
