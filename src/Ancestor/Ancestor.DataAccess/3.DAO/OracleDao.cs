@@ -243,7 +243,7 @@ namespace Ancestor.DataAccess.DAO
             var returnResult = new AncestorResult();
             var parameters = new List<OracleParameter>();
             var dataTable = new DataTable();
-            var dataList = new List<object>();
+            var dataList = new List<T>();
             var SqlString = new StringBuilder();
             using (LambdaExpressionHelper helper = new LambdaExpressionHelper(DbSymbolize, DbLikeSymbolize))
             {
@@ -271,7 +271,7 @@ namespace Ancestor.DataAccess.DAO
                     }
                     dynamic eoDynamic = eo;
 
-                    isSuccess = DB.Query(SqlString.ToString(), eoDynamic, ref dataList);
+                    isSuccess = DB.Query<T>(SqlString.ToString(), eoDynamic, ref dataList);
                     returnResult.Message = DB.ErrorMessage;
                     returnResult.DataList = dataList;
                 }

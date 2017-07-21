@@ -127,10 +127,30 @@ namespace Ancestor.DataAccess.DBAction
         }
         protected override bool Query<T>(string sqlString, object parameterCollection, ref List<T> dataList)
         {
-            var list = dataList.Cast<object>().ToList();
-            var isSuccess = Query(sqlString, parameterCollection, ref list, typeof(T));
-            dataList = list.Cast<T>().ToList();
-            return isSuccess;
+            bool is_success = false;
+            ErrorMessage = string.Empty;
+            DbCommand = DbConnection.CreateCommand();
+            DbCommand.CommandText = sqlString;
+            adapter = new OracleDataAdapter();
+            //DbCommand.BindByName = true;
+            //DbCommand.AddRowid = true;
+
+            if (CheckConnection(DbConnection, DbCommand, testString))
+            {
+                try
+                {
+                    //var parameters = (IEnumerable)parameterCollection;
+                    dataList = DbConnection.QueryMultiple(sqlString, parameterCollection).Read<T>().ToList();
+                    is_success = true;
+                }
+                catch (Exception exception)
+                {
+                    is_success = false;
+                    ErrorMessage = exception.ToString();
+                }
+            }
+            CloseConnection();
+            return is_success;
         }
 
         protected override bool ExecuteNonQuery(string sqlString, ICollection parameterCollection, ref int effectRows)
