@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -106,8 +107,31 @@ namespace Ancestor.Core
 
             return Result_List;
         }
-
-
+        public static List<T> MapTo<T>(this IList source) where T : class, new()
+        {
+            var result = new List<T>();
+            var enumerableType = source.GetType()
+                                    .GetInterfaces()
+                                    .Where(i => i.IsGenericType && i.GetGenericArguments().Length == 1)
+                                    .FirstOrDefault(i => i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
+            if (enumerableType == null)
+                return null;
+            enumerableType = enumerableType.GetGenericArguments()[0];
+            var properties = from sp in enumerableType.GetProperties()
+                             from dp in typeof(T).GetProperties()
+                             where sp.Name.Equals(dp.Name, StringComparison.OrdinalIgnoreCase) && dp.CanWrite && sp.CanRead
+                             select new { Source = sp, Destination = dp };
+            T t;
+            foreach (var src in source) {
+                t = new T();
+                properties.ToList().ForEach(p =>
+                {
+                    p.Destination.SetValue(t, p.Source.GetValue(src, null), null);
+                });
+                result.Add(t);
+            }
+            return result;
+        }
         public static T CreateItemFromRow<T>(DataRow row, IList<PropertyInfo> properties) where T : new()
         {
             T item = new T();
