@@ -28,7 +28,7 @@ namespace Ancestor.Core
                 if (DataList == null)
                     returnList = ReturnDataTable.ToList<T>();
                 else
-                    returnList = DataList as List<T>;
+                    returnList = DataList as List<T> ?? DataList.MapTo<T>();
 
                 var HardWordList = new T().GetType().GetProperties().ToList().FindAll(x => x.GetCustomAttributes(typeof(HardWordAttribute), false).Count() > 0);
                 if(HardWordList.Count() > 0)
