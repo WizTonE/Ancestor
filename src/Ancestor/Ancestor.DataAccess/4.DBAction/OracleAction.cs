@@ -35,6 +35,31 @@ namespace Ancestor.DataAccess.DBAction
         OracleDataAdapter adapter { get; set; }
         //
         IDbTransaction DbTransaction { get; set; }
+
+        //TODO: 與OracleDaoAction的DbTypeDic整合
+        Dictionary<string, OracleDbType> _OracleDbTypeDic = new Dictionary<string, OracleDbType>
+                {
+                    { "VARCHAR2", OracleDbType.Varchar2 },
+                    { "SYSTEM.STRING", OracleDbType.Varchar2 },
+                    { "STRING", OracleDbType.Varchar2 },
+                    { "SYSTEM.DATETIME", OracleDbType.Date },
+                    { "DATETIME", OracleDbType.Date },
+                    { "DATE", OracleDbType.Date },
+                    { "INT64", OracleDbType.Int64 },
+                    { "INT32", OracleDbType.Int32 },
+                    { "INT16", OracleDbType.Int16 },
+                    { "BYTE", OracleDbType.Byte },
+                    { "DECIMAL", OracleDbType.Decimal },
+                    { "FLOAT", OracleDbType.Single },
+                    { "DOUBLE", OracleDbType.Double },
+                    { "BYTE[]", OracleDbType.Blob },
+                    { "CHAR", OracleDbType.Char },
+                    { "CHAR[]", OracleDbType.Char },
+                    { "TIMESTAMP", OracleDbType.TimeStamp },
+                    { "REFCURSOR", OracleDbType.RefCursor },
+                    { "CLOB", OracleDbType.Clob },
+                    { "LONG", OracleDbType.Long }
+                };
         //
         string testString { get; set; }
         public IDbConnection DBConnection
@@ -323,11 +348,14 @@ namespace Ancestor.DataAccess.DBAction
                                 if (prop.PropertyType.IsGenericType &&
                                         prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
                                     propertyType = prop.PropertyType.GetGenericArguments()[0];
-                                var ttt = prop.GetType();
+                                //var ttt = prop.GetType();
                                 var expression = DynamicSelect<T, dynamic>(prop);
                                 var valueList = TempList.Select(expression).ToArray();
+                                
+                                OracleDbType dbType = OracleDbType.Varchar2;
+                                _OracleDbTypeDic.TryGetValue(propertyType.Name.ToUpper(), out dbType);
 
-                                DbCommand.Parameters.Add(":" + prop.Name.ToUpper(), OracleDbType.Varchar2, valueList, ParameterDirection.Input);
+                                DbCommand.Parameters.Add(":" + prop.Name.ToUpper(), dbType, valueList, ParameterDirection.Input);
                             }
                         }
                         sb.Remove(sb.Length - 1, 1);
