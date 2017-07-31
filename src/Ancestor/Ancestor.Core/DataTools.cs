@@ -110,16 +110,14 @@ namespace Ancestor.Core
         public static List<T> MapTo<T>(this IList source) where T : class, new()
         {
             var result = new List<T>();
-            var enumerableType = source.GetType()
-                                    .GetInterfaces()
-                                    .Where(i => i.IsGenericType && i.GetGenericArguments().Length == 1)
-                                    .FirstOrDefault(i => i.GetGenericTypeDefinition() == typeof(IEnumerable<>));
-            if (enumerableType == null)
-                return null;
-            enumerableType = enumerableType.GetGenericArguments()[0];
+            if (source.Count == 0)
+                return result;
+
+
+            var enumerableType = source[0].GetType();
             var properties = from sp in enumerableType.GetProperties()
                              from dp in typeof(T).GetProperties()
-                             where sp.Name.Equals(dp.Name, StringComparison.OrdinalIgnoreCase) && dp.CanWrite && sp.CanRead
+                             where sp.Name.Equals(dp.Name, StringComparison.OrdinalIgnoreCase) && dp.CanWrite && sp.CanRead && dp.PropertyType.IsAssignableFrom(sp.PropertyType)
                              select new { Source = sp, Destination = dp };
             T t;
             foreach (var src in source) {
