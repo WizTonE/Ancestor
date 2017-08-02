@@ -1107,7 +1107,7 @@ namespace Ancestor.DataAccess.DAO
 
         protected override AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5>(Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, object>> selectCondition, Type realType1, Type realType2 = null, Type realType3 = null, Type realType4 = null, Type realType5 = null)
         {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { realType1, realType2 ?? typeof(FakeType2), realType3 ?? typeof(FakeType3), realType4 ?? typeof(FakeType4), realType5 ?? typeof(FakeType5) }, new Type[] { typeof(FakeType1), typeof(FakeType2), typeof(FakeType3) });
+            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { realType1, realType2 ?? typeof(FakeType2), realType3 ?? typeof(FakeType3), realType4 ?? typeof(FakeType4), realType5 ?? typeof(FakeType5) }, new Type[] { typeof(FakeType1), typeof(FakeType2), typeof(FakeType3), typeof(FakeType4), typeof(FakeType5), });
         }
 
         protected override AncestorResult Query<T1, T2, T3, T4, T5, T6>(Expression<Func<T1, T2, T3, T4, T5, T6, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, T6, object>> selectCondition)
@@ -1117,7 +1117,7 @@ namespace Ancestor.DataAccess.DAO
 
         protected override AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6>(Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, object>> selectCondition, Type realType1, Type realType2 = null, Type realType3 = null, Type realType4 = null, Type realType5 = null, Type realType6 = null)
         {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { realType1, realType2 ?? typeof(FakeType2), realType3 ?? typeof(FakeType3), realType4 ?? typeof(FakeType4), realType5 ?? typeof(FakeType5), realType6 ?? typeof(FakeType6) }, new Type[] { typeof(FakeType1), typeof(FakeType2), typeof(FakeType3) });
+            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { realType1, realType2 ?? typeof(FakeType2), realType3 ?? typeof(FakeType3), realType4 ?? typeof(FakeType4), realType5 ?? typeof(FakeType5), realType6 ?? typeof(FakeType6) }, new Type[] { typeof(FakeType1), typeof(FakeType2), typeof(FakeType3), typeof(FakeType4), typeof(FakeType5), typeof(FakeType6) });
         }
 
         private AncestorResult QueryWithJoinCondition(Expression predicate, Expression selectCondition, Type[] queryTypes, Type[] fakeTypes = null)
