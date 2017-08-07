@@ -12,6 +12,7 @@ using Ancestor.DataAccess.Interface;
 using System.Reflection;
 using MySql.Data.MySqlClient;
 using System.Linq.Expressions;
+using System.ComponentModel;
 
 namespace Ancestor.DataAccess.DBAction
 {
@@ -197,29 +198,41 @@ namespace Ancestor.DataAccess.DBAction
             ErrorMessage = string.Empty;
             StringBuilder sb = new StringBuilder();
             StringBuilder sb2 = new StringBuilder();
+            string fields = null, parameters = null;
 
             if (objectList.Count > 0)
             {
+                Dictionary<PropertyInfo, object[]> dic = null;
+                var connectionFlag = CheckConnection(DbConnection, DbCommand, testString);
                 loop_for = (int)Math.Ceiling(Math.Round((double)objectList.Count / 30000, 10));
                 for (int i = 0; i < (loop_for); i++)
                 {
-                    if (CheckConnection(DbConnection, DbCommand, testString))
-                    {
-                        DbCommand = DbConnection.CreateCommand();
+                    if (connectionFlag)
+                    {    
+                        if(DbCommand == null)
+                            DbCommand = DbConnection.CreateCommand();
                         //DbCommand.BindByName = true;
                         List<T> TempList = objectList.GetRange(i * 30000, Math.Min(30000, objectList.Count - i * 30000));
                         //ArrayBindCount一定要填入, 否則會跳ora-01404 insert value too large for column
                         //DbCommand.ArrayBindCount = TempList.Count;
                         //if (sb.Length == 0 && sb2.Length == 0)
                         //{
+                        dic = new Dictionary<PropertyInfo, object[]>();
                         foreach (PropertyInfo prop in TempList[0].GetType().GetProperties())
                         {
                             table_name = TempList[0].GetType().Name;
                             if (prop.Name != "ROWID")
                             {
-                                sb.Append(prop.Name.ToUpper() + ",");
-                                sb2.Append("@" + prop.Name.ToUpper() + ",");
+                                var p = prop.GetCustomAttributes(false).FirstOrDefault(a => a is BrowsableAttribute);
+                                if (p != null && !((BrowsableAttribute)p).Browsable)
+                                    continue;
 
+
+                                if (fields == null)
+                                {
+                                    sb.Append(prop.Name.ToUpper() + ",");
+                                    sb2.Append("@" + prop.Name.ToUpper() + ",");
+                                }
                                 var propertyType = prop.PropertyType;
                                 if (prop.PropertyType.IsGenericType &&
                                         prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
@@ -227,20 +240,36 @@ namespace Ancestor.DataAccess.DBAction
                                 //var ttt = prop.GetType();
                                 var expression = DynamicSelect<T, dynamic>(prop);
                                 var valueList = TempList.Select(expression).ToArray();
+                                dic.Add(prop, valueList);
 
-                                SqlDbType dbType = SqlDbType.VarChar;
-                                _SqlDbTypeDic.TryGetValue(propertyType.Name.ToUpper(), out dbType);
+                                //SqlDbType dbType = SqlDbType.VarChar;
+                                //_SqlDbTypeDic.TryGetValue(propertyType.Name.ToUpper(), out dbType);
 
-                                DbCommand.Parameters.Add("@" + prop.Name.ToUpper(), dbType, 8096);
+                                //DbCommand.Parameters.Add("@" + prop.Name.ToUpper(), valueList);
                             }
                         }
-                        sb.Remove(sb.Length - 1, 1);
-                        sb2.Remove(sb2.Length - 1, 1);
+                        if (fields == null)
+                        {
+                            fields =  sb.Remove(sb.Length - 1, 1).ToString();
+                            parameters = sb2.Remove(sb2.Length - 1, 1).ToString();
+                            sb.Clear();
+                            sb2.Clear();
+                        }
                         try
                         {
-                            DbCommand.CommandText = "INSERT INTO " + table_name + " (" + sb + ")" + " values (" + sb2 + ")";
+                            if(DbCommand.CommandText == "")
+                                DbCommand.CommandText = "INSERT INTO " + table_name + " (" + fields + ")" + " values (" + parameters + ")";
                             //}
-                            effectRows += DbCommand.ExecuteNonQuery();
+
+                            for (int j = 0; j < TempList.Count; j++)
+                            {
+                                DbCommand.Parameters.Clear();
+                                foreach(var kv in dic)
+                                {
+                                    DbCommand.Parameters.AddWithValue("@" + kv.Key.Name.ToUpper(), kv.Value[j] ?? DBNull.Value);
+                                }
+                                effectRows += DbCommand.ExecuteNonQuery();
+                            }
                             isSuccessful = true;
                         }
                         catch (Exception exception)
@@ -249,8 +278,7 @@ namespace Ancestor.DataAccess.DBAction
                             ErrorMessage = exception.ToString();
                         }
 
-                        sb.Clear();
-                        sb2.Clear();
+                        
                     }
                 }
                 CloseConnection();
