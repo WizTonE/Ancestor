@@ -679,7 +679,28 @@ namespace Ancestor.DataAccess.DAO
 
         AncestorResult IDataAccessObject.BulkInsert<T>(List<T> ObjList)
         {
-            throw new NotImplementedException();
+            var SqlString = new StringBuilder();
+            //var sqlValueString = new StringBuilder();
+            var effectRows = 0;
+            //var parameters = new List<M>();
+            var returnResult = new AncestorResult();
+            var isSuccess = false;
+            var tableName = new T().GetType().Name;
+
+            try
+            {
+                isSuccess = DB.BulkInsert(ObjList, ref effectRows);
+                returnResult.EffectRows = effectRows;
+                returnResult.Message = DB.ErrorMessage;
+            }
+            catch (Exception exception)
+            {
+                returnResult.Message = exception.ToString();
+                isSuccess = false;
+            }
+
+            returnResult.IsSuccess = isSuccess;
+            return returnResult;
         }
 
         AncestorResult IDataAccessObject.Query<T>(IModel objectModel)
