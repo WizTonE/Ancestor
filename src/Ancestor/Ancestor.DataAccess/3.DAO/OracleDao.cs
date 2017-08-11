@@ -18,7 +18,7 @@ namespace Ancestor.DataAccess.DAO
     // 2016-02-08 1. Add feature for Dispose. 2. 修改取得DbType的方法, 改為 Dictionary 方式取得
     // 2016-04-05 Add feature SaveChange and CancellChange for transaction.
     // 2017-07-13 修正為繼承BasweAbstractDao
-    public class OracleDao : BaseAbstractDao, IDataAccessObject
+    public class OracleDao : BaseAbstractDao
     {
         Dictionary<string, OracleDbType> _OracleDbTypeDic;
         public OracleDao()
@@ -1247,13 +1247,6 @@ namespace Ancestor.DataAccess.DAO
             returnResult.IsSuccess = isSuccess;
 
             return returnResult;
-        }
-
-        [Browsable(false)]
-        [EditorBrowsable(EditorBrowsableState.Never)]
-        IDbConnection IDataAccessObject.DBConnection
-        {
-            get { return DB.DBConnection; }
         }
     }
 }

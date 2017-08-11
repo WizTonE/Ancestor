@@ -103,7 +103,7 @@ namespace Ancestor.DataAccess.DAO
             Parameters = new List<DBParameter>();
             _SelectProperties = new List<string>();
             parameterCount = 0;
-            _typeMapping = typeMapping;
+            _typeMapping = typeMapping != null && typeMapping.Count > 0 ? typeMapping : null;
         }
 
         public string Translate(Expression expression)
@@ -272,7 +272,7 @@ namespace Ancestor.DataAccess.DAO
                         this.Write(")");
                         return m;
                     case "Substring":
-                        this.Write("SUBSTRING(");
+                        this.Write("SUBSTR(");
                         this.Visit(m.Object);
                         this.Write(", ");
                         this.Visit(m.Arguments[0]);
@@ -320,6 +320,16 @@ namespace Ancestor.DataAccess.DAO
                         this.Write("RTRIM(LTRIM(");
                         this.Visit(m.Object);
                         this.Write("))");
+                        return m;
+                    case "TrimStart":
+                        this.Write("LTRIM(");
+                        this.Visit(m.Object);
+                        this.Write(")");
+                        return m;
+                    case "TrimEnd":
+                        this.Write("RTRIM(");
+                        this.Visit(m.Object);
+                        this.Write(")");
                         return m;
                 }
             }

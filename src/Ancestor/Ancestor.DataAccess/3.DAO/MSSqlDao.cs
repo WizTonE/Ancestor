@@ -13,7 +13,7 @@ using Ancestor.DataAccess.Interface;
 
 namespace Ancestor.DataAccess.DAO
 {
-    public class MSSqlDao : BaseAbstractDao, IDataAccessObject
+    public class MSSqlDao : BaseAbstractDao
     {
         Dictionary<string, SqlDbType> _SqlDbTypeDic;
         public MSSqlDao()
@@ -917,12 +917,6 @@ namespace Ancestor.DataAccess.DAO
         ~MSSqlDao()
         {
             Dispose(false);
-        }
-
-
-        IDbConnection IDataAccessObject.DBConnection
-        {
-            get { return DB.GetConnectionFactory(); }
         }
 
         protected override void Commit()
