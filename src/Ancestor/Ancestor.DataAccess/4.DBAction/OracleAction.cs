@@ -28,9 +28,13 @@ namespace Ancestor.DataAccess.DBAction
     ///                      2. 並取消 ExecuteNonQuery 中的 DbConnection.Close() 功能.
     /// 2016/09-14 Andycow0  Added IDbConnection for returning Connection of DB.
     /// </summary>
-    public class OracleAction : DbAction, IDbAction
+    public class OracleAction : BaseAbstractAction
     {
-        OracleConnection DbConnection { get; set; }
+        OracleConnection DbConnection
+        {
+            get { return DBConnection as OracleConnection; }
+            set { DBConnection = value; }
+        }
         OracleCommand DbCommand { get; set; }
         OracleDataAdapter adapter { get; set; }
         //
@@ -62,10 +66,7 @@ namespace Ancestor.DataAccess.DBAction
                 };
         //
         string testString { get; set; }
-        public IDbConnection DBConnection
-        {
-            get { return DbConnection; }
-        }
+
         public override string DbCommandString
         {
             get { return DbCommand?.CommandText; }
@@ -74,16 +75,11 @@ namespace Ancestor.DataAccess.DBAction
         {
             get { return DbTransaction != null; }
         }
-        public IDbConnection GetConnectionFactory()
+        protected override IDbConnection GetConnectionFactory()
         {
             IDBConnection conn = new ConnectionFactory(DbObject);
             DbConnection = (OracleConnection)conn.GetConnectionFactory().GetConnectionObject();
             return DbConnection;
-        }
-
-        public bool CheckConnectionState()
-        {
-            throw new NotImplementedException();
         }
 
         public OracleAction()
@@ -98,7 +94,7 @@ namespace Ancestor.DataAccess.DBAction
             testString = "select 1 from dual";
         }
 
-        public bool Query(string sqlString, ICollection parameterCollection, ref DataTable dataTable)
+        protected override bool Query(string sqlString, ICollection parameterCollection, ref DataTable dataTable)
         {
             bool is_success = false;
             ErrorMessage = string.Empty;
@@ -127,8 +123,7 @@ namespace Ancestor.DataAccess.DBAction
             CloseConnection();
             return is_success;
         }
-
-        public bool Query<T>(string sqlString, object parameterCollection, ref List<T> dataList) where T : class, new()
+        protected override bool Query(string sqlString, object parameterCollection, ref List<object> dataList, Type realType)
         {
             bool is_success = false;
             ErrorMessage = string.Empty;
@@ -143,7 +138,34 @@ namespace Ancestor.DataAccess.DBAction
                 try
                 {
                     //var parameters = (IEnumerable)parameterCollection;
-                    dataList = DBConnection.QueryMultiple(sqlString, parameterCollection).Read<T>().ToList();
+                    dataList = DbConnection.QueryMultiple(sqlString, parameterCollection).Read(realType).ToList();
+                    is_success = true;
+                }
+                catch (Exception exception)
+                {
+                    is_success = false;
+                    ErrorMessage = exception.ToString();
+                }
+            }
+            CloseConnection();
+            return is_success;
+        }
+        protected override bool Query<T>(string sqlString, object parameterCollection, ref List<T> dataList)
+        {
+            bool is_success = false;
+            ErrorMessage = string.Empty;
+            DbCommand = DbConnection.CreateCommand();
+            DbCommand.CommandText = sqlString;
+            adapter = new OracleDataAdapter();
+            //DbCommand.BindByName = true;
+            //DbCommand.AddRowid = true;
+
+            if (CheckConnection(DbConnection, DbCommand, testString))
+            {
+                try
+                {
+                    //var parameters = (IEnumerable)parameterCollection;
+                    dataList = DbConnection.QueryMultiple(sqlString, parameterCollection).Read<T>().ToList();
                     is_success = true;
                 }
                 catch (Exception exception)
@@ -156,7 +178,7 @@ namespace Ancestor.DataAccess.DBAction
             return is_success;
         }
 
-        public bool ExecuteNonQuery(string sqlString, ICollection parameterCollection, ref int effectRows)
+        protected override bool ExecuteNonQuery(string sqlString, ICollection parameterCollection, ref int effectRows)
         {
             bool isSuccessful = false;
             ErrorMessage = string.Empty;
@@ -197,7 +219,7 @@ namespace Ancestor.DataAccess.DBAction
             return isSuccessful;
         }
 
-        public bool ExecuteStoredProcedure(string procedureName, bool bindbyName, ICollection parameterCollection, List<DBParameter> dBParameter)
+        protected override bool ExecuteStoredProcedure(string procedureName, bool bindbyName, ICollection parameterCollection, List<DBParameter> dBParameter)
         {
             bool is_success = false;
             ErrorMessage = string.Empty;
@@ -294,7 +316,7 @@ namespace Ancestor.DataAccess.DBAction
         }
 
         // 2016-04-05 Add feature for transaction.
-        public void DbCommit()
+        protected override void DbCommit()
         {
             if (DbTransaction != null)
             {
@@ -303,7 +325,7 @@ namespace Ancestor.DataAccess.DBAction
                 CloseConnection();
             }
         }
-        public void DbRollBack()
+        protected override void DbRollBack()
         {
             if (DbTransaction != null)
             {
@@ -313,7 +335,7 @@ namespace Ancestor.DataAccess.DBAction
             }
         }
 
-        public bool BulkInsert<T>(List<T> objList, ref int effectRows) where T : class, IModel, new()
+        protected override bool BulkInsert<T>(List<T> objList, ref int effectRows) 
         {
             string table_name = string.Empty;
             int loop_for = 0;
@@ -400,7 +422,7 @@ namespace Ancestor.DataAccess.DBAction
             return lambda;
         }
 
-        public IDbTransaction BeginTransaction()
+        protected override IDbTransaction BeginTransaction()
         {
             if (CheckConnection(DbConnection, DbCommand, testString))
             {
@@ -409,7 +431,7 @@ namespace Ancestor.DataAccess.DBAction
             return DbTransaction;
         }
 
-        public IDbTransaction BeginTransaction(IsolationLevel isolationLevel)
+        protected override IDbTransaction BeginTransaction(IsolationLevel isolationLevel)
         {
             if (CheckConnection(DbConnection, DbCommand, testString))
             {

@@ -20,7 +20,7 @@ namespace Ancestor.DataAccess.DBAction
     public abstract class BaseAbstractAction : DbAction, IDbAction
     {
         #region Virtual Function
-        protected virtual IDbConnection DBConnection { get { throw new NotImplementedException(); } }
+        protected virtual IDbConnection DBConnection { set;get; }
 
         protected virtual IDbTransaction BeginTransaction()
         {
@@ -32,7 +32,7 @@ namespace Ancestor.DataAccess.DBAction
             throw new NotImplementedException();
         }
 
-        protected virtual bool BulkInsert<T>(List<T> objectList, ref int effectRows)
+        protected virtual bool BulkInsert<T>(List<T> objectList, ref int effectRows) where T : class, IModel, new()
         {
             throw new NotImplementedException();
         }
@@ -73,6 +73,10 @@ namespace Ancestor.DataAccess.DBAction
         }
 
         protected virtual bool Query<T>(string sqlString, object parameterCollection, ref List<T> dataList)
+        {
+            throw new NotImplementedException();
+        }
+        protected virtual bool Query(string sqlString, object parameterCollection, ref List<object> dataList, Type realType)
         {
             throw new NotImplementedException();
         }
@@ -136,6 +140,11 @@ namespace Ancestor.DataAccess.DBAction
         bool IDbAction.Query<T>(string sqlString, object parameterCollection, ref List<T> dataList)
         {
             return Query<T>(sqlString, parameterCollection, ref dataList);
+        }
+
+        bool IDbAction.Query(string sqlString, object parameterCollection, ref List<object> dataList, Type realType)
+        {
+            return Query(sqlString, parameterCollection, ref dataList, realType);
         }
         #endregion
 

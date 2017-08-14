@@ -22,19 +22,19 @@ namespace Ancestor.Core
             PropertyInfo[] PI_List = null;
             System.ComponentModel.DisplayNameAttribute displayName = null;
             foreach (var item in ListValue)
-            {                
+            {
                 //判斷 DataTable 是否已經定義欄位名稱與型態
                 if (dt.Columns.Count == 0)
                 {
                     //取得 Type 所有的共用屬性
                     PI_List = item.GetType().GetProperties();
-                    
+
                     //將 List 中的 名稱 與 型別，定義 DataTable 中的欄位 名稱 與 型別
                     foreach (var item1 in PI_List)
                     {
                         Type t = Nullable.GetUnderlyingType(item1.PropertyType)
                             ?? item1.PropertyType;
-                        if(useDisplayName)
+                        if (useDisplayName)
                             displayName = item1.GetCustomAttributes(typeof(System.ComponentModel.DisplayNameAttribute), true).FirstOrDefault() as System.ComponentModel.DisplayNameAttribute;
                         dt.Columns.Add(displayName != null ? displayName.DisplayName : item1.Name, t);
                     }
@@ -96,7 +96,7 @@ namespace Ancestor.Core
                         //if (item1.PropertyType.IsArray)
                         //    safeValue = (item[item1.Name] == null) ? null : Convert.ChangeType(item[item1.Name].ToString().ToCharArray(), t);
                         //else
-                            safeValue = (item[item1.Name] == null) ? null : Convert.ChangeType(item[item1.Name], t);
+                        safeValue = (item[item1.Name] == null) ? null : Convert.ChangeType(item[item1.Name], t);
 
                         item1.SetValue(tr, safeValue, null);
                     }
@@ -156,12 +156,25 @@ namespace Ancestor.Core
 
         public static byte[] StringToByteArray(string hex)
         {
-            if (!hex.All(c => char.IsLetterOrDigit(c)))
+            if (!hex.All(c =>
+            {
+                try
+                {
+                    Convert.ToByte(c.ToString(), 16);
+                    return true;
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }))
                 return Encoding.Default.GetBytes(hex);
             return Enumerable.Range(0, hex.Length)
                              .Where(x => x % 2 == 0)
                              .Select(x => Convert.ToByte(hex.Substring(x, 2), 16))
                              .ToArray();
         }
+
+
     }
 }

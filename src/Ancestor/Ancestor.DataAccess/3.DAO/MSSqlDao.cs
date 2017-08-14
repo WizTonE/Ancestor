@@ -13,7 +13,7 @@ using Ancestor.DataAccess.Interface;
 
 namespace Ancestor.DataAccess.DAO
 {
-    public class MSSqlDao : DataAccessObject, IDataAccessObject
+    public class MSSqlDao : BaseAbstractDao
     {
         Dictionary<string, SqlDbType> _SqlDbTypeDic;
         public MSSqlDao()
@@ -28,7 +28,7 @@ namespace Ancestor.DataAccess.DAO
             base.DbSymbolize = "@";
             base.DbLikeSymbolize = "&";
         }
-        public AncestorResult Delete(IModel whereObject)
+        protected override AncestorResult Delete(IModel whereObject)
         {
             var SqlString = new StringBuilder();
             //StringBuilder sb2 = new StringBuilder();
@@ -63,7 +63,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        public AncestorResult Delete<T>(Expression<Func<T, bool>> predicate) where T : class, new()
+        protected override AncestorResult Delete<T>(Expression<Func<T, bool>> predicate) 
         {
             string whereString = string.Empty;
             var isSuccess = false;
@@ -109,7 +109,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        public AncestorResult ExecuteNonQuery(string sqlString, object modelObject)
+        protected override AncestorResult ExecuteNonQuery(string sqlString, object modelObject)
         {
             var SqlString = new StringBuilder();
             SqlString.Append(sqlString);
@@ -155,7 +155,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        public AncestorResult ExecuteStoredProcedure(string procedureName, bool bindbyName, List<DBParameter> dBParameter)
+        protected override AncestorResult ExecuteStoredProcedure(string procedureName, bool bindbyName, List<DBParameter> dBParameter)
         {
             var parameters = new List<SqlParameter>();
             var returnResult = new AncestorResult();
@@ -219,13 +219,7 @@ namespace Ancestor.DataAccess.DAO
             returnResult.IsSuccess = isSuccess;
             return returnResult;
         }
-
-        public IDbAction GetActionFactory()
-        {
-            return base.DB = ActionFactory.GetDBAction(DbObject);
-        }
-
-        public AncestorResult Insert(IModel objectModel)
+        protected override AncestorResult Insert(IModel objectModel)
         {
             var SqlString = new StringBuilder();
             var sqlValueString = new StringBuilder();
@@ -277,7 +271,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        public AncestorResult Query(IModel objectModel)
+        protected override AncestorResult Query(IModel objectModel)
         {
             var isSuccess = false;
             var sqlString = string.Empty;
@@ -311,7 +305,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        public AncestorResult Query(string sqlString, object paramsObjects)
+        protected override AncestorResult Query(string sqlString, object paramsObjects)
         {
             var isSuccess = false;
             var returnResult = new AncestorResult();
@@ -360,7 +354,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        public AncestorResult Query<T>(Expression<Func<T, bool>> predicate) where T : class, new()
+        protected override AncestorResult Query<T>(Expression<Func<T, bool>> predicate) 
         {
             string whereString = string.Empty;
             var isSuccess = false;
@@ -407,7 +401,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        public AncestorResult QueryNoRowid(IModel objectModel)
+        protected override AncestorResult QueryNoRowid(IModel objectModel)
         {
             var isSuccess = false;
             var sqlString = string.Empty;
@@ -441,7 +435,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        public AncestorResult QueryNoRowid<T>(Expression<Func<T, bool>> predicate) where T : class, new()
+        protected override AncestorResult QueryNoRowid<T>(Expression<Func<T, bool>> predicate) 
         {
             string whereString = string.Empty;
             var isSuccess = false;
@@ -488,7 +482,7 @@ namespace Ancestor.DataAccess.DAO
 
             return returnResult;
         }
-        public AncestorResult Update(IModel valueObject, object paramsObjects)
+        protected override AncestorResult Update(IModel valueObject, object paramsObjects)
         {
             var SqlString = new StringBuilder();
             var sb2 = new StringBuilder();
@@ -536,7 +530,7 @@ namespace Ancestor.DataAccess.DAO
             returnResult.IsSuccess = isSuccess;
             return returnResult;
         }
-        public AncestorResult Update(IModel valueObject, IModel whereObject)
+        protected override AncestorResult Update(IModel valueObject, IModel whereObject)
         {
             var SqlString = new StringBuilder();
             var sb2 = new StringBuilder();
@@ -624,7 +618,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        public AncestorResult Update<T>(IModel valueObject, Expression<Func<T, bool>> predicate) where T : class, new()
+        protected override AncestorResult Update<T>(IModel valueObject, Expression<Func<T, bool>> predicate) 
         {
             string whereString = string.Empty;
             var isSuccess = false;
@@ -677,12 +671,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        AncestorResult IDataAccessObject.BulkInsert<T>(List<T> ObjList)
-        {
-            throw new NotImplementedException();
-        }
-
-        AncestorResult IDataAccessObject.Query<T>(IModel objectModel)
+        protected override AncestorResult Query<T>(IModel objectModel)
         {
             var SqlString = new StringBuilder();
             var isSuccess = false;
@@ -715,7 +704,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        AncestorResult IDataAccessObject.QueryNoRowid<T>(IModel objectModel)
+        protected override AncestorResult QueryNoRowid<T>(IModel objectModel)
         {
             var SqlString = new StringBuilder();
             var isSuccess = false;
@@ -925,90 +914,23 @@ namespace Ancestor.DataAccess.DAO
             DB = null;
         }
 
-        public IDbTransaction BeginTransaction()
-        {
-            return DB.BeginTransaction();
-        }
-
-        public IDbTransaction BeginTransaction(IsolationLevel isoLationLevel)
-        {
-            return DB.BeginTransaction(isoLationLevel);
-        }
-        public AncestorResult Query<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> selectCondition)
-            where T : class, new()
-        {
-            throw new NotImplementedException();
-        }
-        public AncestorResult Query<T1, T2>(Expression<Func<T1, T2, bool>> predicate, Expression<Func<T1, T2, object>> selectCondition)
-            where T1 : class, new()
-            where T2 : class, new()
-        {
-            throw new NotImplementedException();
-        }
-
-        public AncestorResult Query<T1, T2, T3>(Expression<Func<T1, T2, T3, bool>> predicate, Expression<Func<T1, T2, T3, object>> selectCondition)
-            where T1 : class, new()
-            where T2 : class, new()
-            where T3 : class, new()
-        {
-            throw new NotImplementedException();
-        }
-
-        public AncestorResult Query<T1, T2, T3, T4>(Expression<Func<T1, T2, T3, T4, bool>> predicate, Expression<Func<T1, T2, T3, T4, object>> selectCondition)
-            where T1 : class, new()
-            where T2 : class, new()
-            where T3 : class, new()
-            where T4 : class, new()
-        {
-            throw new NotImplementedException();
-        }
-
-        public AncestorResult Query<T1, T2, T3, T4, T5>(Expression<Func<T1, T2, T3, T4, T5, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, object>> selectCondition)
-            where T1 : class, new()
-            where T2 : class, new()
-            where T3 : class, new()
-            where T4 : class, new()
-            where T5 : class, new()
-        {
-            throw new NotImplementedException();
-        }
-
-        public AncestorResult Query<T1, T2, T3, T4, T5, T6>(Expression<Func<T1, T2, T3, T4, T5, T6, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, T6, object>> selectCondition)
-            where T1 : class, new()
-            where T2 : class, new()
-            where T3 : class, new()
-            where T4 : class, new()
-            where T5 : class, new()
-            where T6 : class, new()
-        {
-            throw new NotImplementedException();
-        }
-
-
-
         ~MSSqlDao()
         {
             Dispose(false);
         }
 
-
-        IDbConnection IDataAccessObject.DBConnection
-        {
-            get { return DB.GetConnectionFactory(); }
-        }
-
-        public void Commit()
+        protected override void Commit()
         {
             DB.DbCommit();
         }
 
 
-        public void Rollback()
+        protected override void Rollback()
         {
             DB.DbRollBack();
         }
 
-        public AncestorResult UpdateAll(IModel valueObject, IModel whereObject)
+        protected override AncestorResult UpdateAll(IModel valueObject, IModel whereObject)
         {
             var SqlString = new StringBuilder();
             var sb2 = new StringBuilder();
@@ -1042,7 +964,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        public AncestorResult UpdateAll<T>(IModel valueObject, Expression<Func<T, bool>> predicate) where T : class, new()
+        protected override AncestorResult UpdateAll<T>(IModel valueObject, Expression<Func<T, bool>> predicate) 
         {
             string whereString = string.Empty;
             var isSuccess = false;
