@@ -24,7 +24,7 @@ namespace Ancestor.DataAccess.DBAction
     /// History : 
     /// 2015/07/31 Andycow0 建立
     /// </summary>
-    public class MSSqlAction : DbAction, IDbAction
+    public class MSSqlAction : BaseAbstractAction
     {
         private Dictionary<string, SqlDbType> _sqlDbTypeDic;
         private Dictionary<string, SqlDbType> _SqlDbTypeDic
@@ -57,7 +57,11 @@ namespace Ancestor.DataAccess.DBAction
             }
         }
         SqlTransaction DbTransaction;
-        SqlConnection DbConnection { get; set; }
+        SqlConnection DbConnection
+        {
+            get { return DBConnection as SqlConnection; }
+            set { DBConnection = value; }
+        }
         SqlCommand DbCommand { get; set; }
 
         SqlDataAdapter adapter { get; set; }
@@ -65,10 +69,6 @@ namespace Ancestor.DataAccess.DBAction
 
         public MSSqlAction()
         { }
-        public IDbConnection DBConnection
-        {
-            get { return DbConnection; }
-        }
         public override string DbCommandString
         {
             get { return DbCommand?.CommandText; }
@@ -78,7 +78,7 @@ namespace Ancestor.DataAccess.DBAction
         {
             get { return DbTransaction != null; }
         }
-        public IDbConnection GetConnectionFactory()
+        protected override IDbConnection GetConnectionFactory()
         {
             IDBConnection conn = new ConnectionFactory(DbObject);
             return DbConnection = (SqlConnection)conn.GetConnectionFactory().GetConnectionObject();
@@ -91,12 +91,8 @@ namespace Ancestor.DataAccess.DBAction
             testString = "select 1 ";
         }
 
-        public bool CheckConnectionState()
-        {
-            throw new NotImplementedException();
-        }
 
-        public bool Query(string sqlString, ICollection parameterCollection, ref DataTable dataTable)
+        protected override bool Query(string sqlString, ICollection parameterCollection, ref DataTable dataTable)
         {
             bool is_success = false;
             ErrorMessage = string.Empty;
@@ -126,13 +122,13 @@ namespace Ancestor.DataAccess.DBAction
             return is_success;
         }
 
-        public bool Query<T>(string sqlString, object parameterCollection, ref List<T> dataTable) where T : class, new()
+        protected override bool Query<T>(string sqlString, object parameterCollection, ref List<T> dataTable)
         {
             throw new NotImplementedException();
         }
 
 
-        public bool ExecuteNonQuery(string sqlString, ICollection parameterCollection, ref int effectRows)
+        protected override bool ExecuteNonQuery(string sqlString, ICollection parameterCollection, ref int effectRows)
         {
             bool isSuccessful = false;
             ErrorMessage = string.Empty;
@@ -173,24 +169,19 @@ namespace Ancestor.DataAccess.DBAction
             return isSuccessful;
         }
 
-        public bool ExecuteStoredProcedure(string procedureName, bool bindbyName, ICollection parameterCollection, List<DBParameter> dBParameter)
+        protected override bool ExecuteStoredProcedure(string procedureName, bool bindbyName, ICollection parameterCollection, List<DBParameter> dBParameter)
         {
             throw new NotImplementedException();
         }
 
 
-        public void DbCommit()
+        protected override void DbCommit()
         {
             throw new NotImplementedException();
         }
 
 
-        public void DbRollBack()
-        {
-            throw new NotImplementedException();
-        }
-
-        bool IDbAction.BulkInsert<T>(List<T> objectList, ref int effectRows)
+        protected override void DbRollBack()
         {
             string table_name = string.Empty;
             int loop_for = 0;
@@ -294,12 +285,12 @@ namespace Ancestor.DataAccess.DBAction
             return lambda;
         }
 
-        public IDbTransaction BeginTransaction()
+        protected override IDbTransaction BeginTransaction()
         {
             return DbTransaction = DbConnection.BeginTransaction();
         }
 
-        public IDbTransaction BeginTransaction(IsolationLevel isolationLevel)
+        protected override IDbTransaction BeginTransaction(IsolationLevel isolationLevel)
         {
             return DbTransaction = DbConnection.BeginTransaction(isolationLevel);
         }

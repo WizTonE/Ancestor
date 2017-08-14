@@ -29,6 +29,7 @@ namespace Ancestor.DataAccess.Interface
         bool CheckConnectionState();
         bool Query(string sqlString, ICollection parameterCollection, ref DataTable dataTable);
         bool Query<T>(string sqlString, object parameterCollection, ref List<T> dataList) where T: class, new();
+        bool Query(string sqlString, object parameterCollection, ref List<object> dataList, Type realType);
         bool ExecuteNonQuery(string sqlString, ICollection parameterCollection, ref int successRow);
         bool ExecuteStoredProcedure(string procedureName, bool bindbyName, ICollection parameterCollection, List<DBParameter> dBParameter);
         bool BulkInsert<T>(List<T> objectList, ref int effectRows) where T : class, IModel, new();
