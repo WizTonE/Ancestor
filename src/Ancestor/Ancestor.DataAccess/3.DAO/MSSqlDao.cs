@@ -63,7 +63,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        protected override AncestorResult Delete<T>(Expression<Func<T, bool>> predicate) 
+        protected override AncestorResult Delete<T>(Expression<Func<T, bool>> predicate)
         {
             string whereString = string.Empty;
             var isSuccess = false;
@@ -354,7 +354,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        protected override AncestorResult Query<T>(Expression<Func<T, bool>> predicate) 
+        protected override AncestorResult Query<T>(Expression<Func<T, bool>> predicate)
         {
             string whereString = string.Empty;
             var isSuccess = false;
@@ -435,7 +435,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        protected override AncestorResult QueryNoRowid<T>(Expression<Func<T, bool>> predicate) 
+        protected override AncestorResult QueryNoRowid<T>(Expression<Func<T, bool>> predicate)
         {
             string whereString = string.Empty;
             var isSuccess = false;
@@ -500,13 +500,14 @@ namespace Ancestor.DataAccess.DAO
 
                 if (paramsObjects != null)
                 {
-                    var paras = paramsObjects.GetType().GetProperties().Select(x => {
+                    var paras = paramsObjects.GetType().GetProperties().Select(x =>
+                    {
                         var parameter = new SqlParameter(DbSymbolize + x.Name, (SqlDbType)GetDbType(x.PropertyType.Name));
                         parameter.Value = x.GetValue(valueObject, null);
                         parameter.Direction = ParameterDirection.Input;
                         return parameter;
                     });
-                    
+
                     //Todo
                     if (((SqlParameter)paras.FirstOrDefault()).Value != null)
                         parameters.AddRange(paras);
@@ -618,7 +619,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        protected override AncestorResult Update<T>(IModel valueObject, Expression<Func<T, bool>> predicate) 
+        protected override AncestorResult Update<T>(IModel valueObject, Expression<Func<T, bool>> predicate)
         {
             string whereString = string.Empty;
             var isSuccess = false;
@@ -668,6 +669,31 @@ namespace Ancestor.DataAccess.DAO
             }
             returnResult.IsSuccess = isSuccess;
 
+            return returnResult;
+        }
+        protected override AncestorResult BulkInsert<T>(List<T> ObjList)
+        {
+            var SqlString = new StringBuilder();
+            //var sqlValueString = new StringBuilder();
+            var effectRows = 0;
+            //var parameters = new List<M>();
+            var returnResult = new AncestorResult();
+            var isSuccess = false;
+            var tableName = new T().GetType().Name;
+
+            try
+            {
+                isSuccess = DB.BulkInsert(ObjList, ref effectRows);
+                returnResult.EffectRows = effectRows;
+                returnResult.Message = DB.ErrorMessage;
+            }
+            catch (Exception exception)
+            {
+                returnResult.Message = exception.ToString();
+                isSuccess = false;
+            }
+
+            returnResult.IsSuccess = isSuccess;
             return returnResult;
         }
 
@@ -964,7 +990,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        protected override AncestorResult UpdateAll<T>(IModel valueObject, Expression<Func<T, bool>> predicate) 
+        protected override AncestorResult UpdateAll<T>(IModel valueObject, Expression<Func<T, bool>> predicate)
         {
             string whereString = string.Empty;
             var isSuccess = false;

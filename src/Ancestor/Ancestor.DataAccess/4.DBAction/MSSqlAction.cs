@@ -9,6 +9,10 @@ using System.Text;
 using Ancestor.DataAccess.Factory;
 using System.Data.SqlClient;
 using Ancestor.DataAccess.Interface;
+using System.Reflection;
+using MySql.Data.MySqlClient;
+using System.Linq.Expressions;
+using System.ComponentModel;
 
 namespace Ancestor.DataAccess.DBAction
 {
@@ -22,6 +26,36 @@ namespace Ancestor.DataAccess.DBAction
     /// </summary>
     public class MSSqlAction : BaseAbstractAction
     {
+        private Dictionary<string, SqlDbType> _sqlDbTypeDic;
+        private Dictionary<string, SqlDbType> _SqlDbTypeDic
+        {
+            get
+            {
+                if (_sqlDbTypeDic == null)
+                {
+                    _sqlDbTypeDic = new Dictionary<string, SqlDbType>();
+                    _sqlDbTypeDic.Add("VARCHAR2", SqlDbType.VarChar);
+                    _sqlDbTypeDic.Add("SYSTEM.STRING", SqlDbType.VarChar);
+                    _sqlDbTypeDic.Add("STRING", SqlDbType.VarChar);
+                    _sqlDbTypeDic.Add("SYSTEM.DATETIME", SqlDbType.Date);
+                    _sqlDbTypeDic.Add("DATETIME", SqlDbType.Date);
+                    _sqlDbTypeDic.Add("DATE", SqlDbType.Date);
+                    _sqlDbTypeDic.Add("INT64", SqlDbType.BigInt);
+                    _sqlDbTypeDic.Add("INT32", SqlDbType.Int);
+                    _sqlDbTypeDic.Add("INT16", SqlDbType.SmallInt);
+                    _sqlDbTypeDic.Add("BYTE", SqlDbType.Binary);
+                    _sqlDbTypeDic.Add("DECIMAL", SqlDbType.Decimal);
+                    _sqlDbTypeDic.Add("FLOAT", SqlDbType.Float);
+                    _sqlDbTypeDic.Add("DOUBLE", SqlDbType.Decimal);
+                    _sqlDbTypeDic.Add("BYTE[]", SqlDbType.Binary);
+                    _sqlDbTypeDic.Add("CHAR", SqlDbType.Char);
+                    _sqlDbTypeDic.Add("CHAR[]", SqlDbType.Char);
+                    _sqlDbTypeDic.Add("TIMESTAMP", SqlDbType.Timestamp);
+                    _sqlDbTypeDic.Add("REFCURSOR", SqlDbType.Variant);
+                }
+                return _sqlDbTypeDic;
+            }
+        }
         SqlTransaction DbTransaction;
         SqlConnection DbConnection
         {
@@ -135,21 +169,95 @@ namespace Ancestor.DataAccess.DBAction
             return isSuccessful;
         }
 
-        protected override bool ExecuteStoredProcedure(string procedureName, bool bindbyName, ICollection parameterCollection, List<DBParameter> dBParameter)
+        protected override bool BulkInsert<T>(List<T> objectList, ref int effectRows)
         {
-            throw new NotImplementedException();
+            string table_name = string.Empty;
+            int loop_for = 0;
+            bool isSuccessful = false;
+            ErrorMessage = string.Empty;
+            StringBuilder sb = new StringBuilder();
+            StringBuilder sb2 = new StringBuilder();
+            string fields = null, parameters = null;
+
+            if (objectList.Count > 0)
+            {
+                Dictionary<PropertyInfo, object[]> dic = null;
+                var connectionFlag = CheckConnection(DbConnection, DbCommand, testString);
+                loop_for = (int)Math.Ceiling(Math.Round((double)objectList.Count / 30000, 10));
+                for (int i = 0; i < (loop_for); i++)
+                {
+                    if (connectionFlag)
+                    {
+                        if (DbCommand == null)
+                            DbCommand = DbConnection.CreateCommand();
+                        List<T> TempList = objectList.GetRange(i * 30000, Math.Min(30000, objectList.Count - i * 30000));
+                        dic = new Dictionary<PropertyInfo, object[]>();
+                        foreach (PropertyInfo prop in TempList[0].GetType().GetProperties())
+                        {
+                            table_name = TempList[0].GetType().Name;
+                            if (prop.Name != "ROWID")
+                            {
+                                var p = prop.GetCustomAttributes(false).FirstOrDefault(a => a is BrowsableAttribute);
+                                if (p != null && !((BrowsableAttribute)p).Browsable)
+                                    continue;
+
+
+                                if (fields == null)
+                                {
+                                    sb.Append(prop.Name.ToUpper() + ",");
+                                    sb2.Append("@" + prop.Name.ToUpper() + ",");
+                                }
+                                var propertyType = prop.PropertyType;
+                                if (prop.PropertyType.IsGenericType &&
+                                        prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                                    propertyType = prop.PropertyType.GetGenericArguments()[0];
+                                var expression = DynamicSelect<T, dynamic>(prop);
+                                var valueList = TempList.Select(expression).ToArray();
+                                dic.Add(prop, valueList);
+                            }
+                        }
+                        if (fields == null)
+                        {
+                            fields = sb.Remove(sb.Length - 1, 1).ToString();
+                            parameters = sb2.Remove(sb2.Length - 1, 1).ToString();
+                            sb.Clear();
+                            sb2.Clear();
+                        }
+                        try
+                        {
+                            if (DbCommand.CommandText == "")
+                                DbCommand.CommandText = "INSERT INTO " + table_name + " (" + fields + ")" + " values (" + parameters + ")";
+                            for (int j = 0; j < TempList.Count; j++)
+                            {
+                                DbCommand.Parameters.Clear();
+                                foreach (var kv in dic)
+                                {
+                                    DbCommand.Parameters.AddWithValue("@" + kv.Key.Name.ToUpper(), kv.Value[j] ?? DBNull.Value);
+                                }
+                                effectRows += DbCommand.ExecuteNonQuery();
+                            }
+                            isSuccessful = true;
+                        }
+                        catch (Exception exception)
+                        {
+                            isSuccessful = false;
+                            ErrorMessage = exception.ToString();
+                        }
+
+
+                    }
+                }
+                CloseConnection();
+            }
+            return isSuccessful;
         }
-
-
-        protected override void DbCommit()
+        private Func<TEntity, object> DynamicSelect<TEntity, TField>(PropertyInfo prop) where TEntity : class, new()
         {
-            throw new NotImplementedException();
-        }
-
-
-        protected override void DbRollBack()
-        {
-            throw new NotImplementedException();
+            var parameterExpression = Expression.Parameter(typeof(TEntity), "x");
+            var memberExpression = Expression.PropertyOrField(parameterExpression, prop.Name);
+            var memberExpressionConversion = Expression.Convert(memberExpression, typeof(object));
+            var lambda = Expression.Lambda<Func<TEntity, object>>(memberExpressionConversion, parameterExpression).Compile();
+            return lambda;
         }
 
         protected override IDbTransaction BeginTransaction()

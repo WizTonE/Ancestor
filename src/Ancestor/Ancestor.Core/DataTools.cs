@@ -10,8 +10,9 @@ namespace Ancestor.Core
 {
     public static class DataTools
     {
+        const string HEX = "ABCDEFabcdef0123456789";
         public static DataTable ToDataTable<TResult>(this IEnumerable<TResult> ListValue, bool useDisplayName = false) where TResult : class, new()
-        {
+        {            
             //建立一個回傳用的 DataTable
             DataTable dt = new DataTable();
 
@@ -156,18 +157,7 @@ namespace Ancestor.Core
 
         public static byte[] StringToByteArray(string hex)
         {
-            if (!hex.All(c =>
-            {
-                try
-                {
-                    Convert.ToByte(c.ToString(), 16);
-                    return true;
-                }
-                catch (Exception)
-                {
-                    return false;
-                }
-            }))
+            if (!hex.All(c => HEX.Contains(c)))
                 return Encoding.Default.GetBytes(hex);
             return Enumerable.Range(0, hex.Length)
                              .Where(x => x % 2 == 0)

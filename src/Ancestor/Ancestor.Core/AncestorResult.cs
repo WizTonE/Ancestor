@@ -45,9 +45,13 @@ namespace Ancestor.Core
                                         codepage = attr.CodePage;
                                     if(!string.IsNullOrEmpty(attr.CodeName))
                                         codepage = Encoding.GetEncoding(attr.CodeName).CodePage;
-                                    prop.SetValue(item,
-                                    Encoding.GetEncoding(codepage).GetString(DataTools.StringToByteArray(prop.GetValue(item, null).ToString())), 
-                                    null);
+                                    var value = prop.GetValue(item, null);
+                                    if (value != null)
+                                    {
+                                        prop.SetValue(item,
+                                        Encoding.GetEncoding(codepage).GetString(DataTools.StringToByteArray(value.ToString())),
+                                        null);
+                                    }
                                 }
                             });
                         });
