@@ -24,5 +24,13 @@ namespace Ancestor.DataAccess.DAO
         {
             return t;
         }
+        public static T NotNull<T>(this T property, string defaultValue)
+        {
+            return property;
+        }
+        public static T NotNull<T>(this T property)
+        {
+            return property;
+        }
     }
 }
