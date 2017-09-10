@@ -423,10 +423,10 @@ namespace Ancestor.DataAccess.DAO
                         this.Write("TO_CHAR(");
                         this.Visit(m.Arguments[0]);
                         this.Write(", '");
-                        var ex = m.Arguments.ElementAtOrDefault(1);                        
+                        var ex = m.Arguments.ElementAtOrDefault(1);
                         var format = ex != null ? Expression.Lambda(ex).Compile().DynamicInvoke() ?? "YYYYMMDD" : "YYYYMMDD";
                         this.Write(format);
-                        this.Write("')");                        
+                        this.Write("')");
                         return m;
                 }
             }
@@ -556,6 +556,18 @@ namespace Ancestor.DataAccess.DAO
                 this.Write(")");
                 return m;
             }
+            else if (m.Method.IsStatic && m.Method.Name == "NotNull")
+            {
+                this.Write("NVL("); //Oracle Only
+                this.Visit(m.Arguments[0]);
+                this.Write(",");
+                if (m.Arguments.Count == 2)
+                    this.Visit(m.Arguments[1]);
+                else
+                    this.Write("'This field is null.'");
+                this.Write(")");
+                return m;
+            }
             else if (m.Method.Name == "SelectAll")
             {
                 if (m.Arguments.Count > 0)
@@ -587,7 +599,7 @@ namespace Ancestor.DataAccess.DAO
                 else
                     names.Add(name);
             }
-            
+
             return string.Join(", ", names);
         }
         protected void SetParameter(MethodCallExpression m)
@@ -934,9 +946,9 @@ namespace Ancestor.DataAccess.DAO
                 if (exp.NodeType == ExpressionType.Constant)
                     return (exp.NodeType == ExpressionType.Constant && ((ConstantExpression)exp).Value == null);
                 else if (exp.NodeType == ExpressionType.MemberAccess)
-                {                    
+                {
                     var m = (MemberExpression)exp;
-                    var value =  Expression.Lambda(m).Compile().DynamicInvoke();
+                    var value = Expression.Lambda(m).Compile().DynamicInvoke();
                     return value == null;
                 }
                 else
