@@ -860,8 +860,8 @@ namespace Ancestor.DataAccess.DAO
                 _SqlDbTypeDic.Add("VARCHAR2", SqlDbType.VarChar);
                 _SqlDbTypeDic.Add("SYSTEM.STRING", SqlDbType.VarChar);
                 _SqlDbTypeDic.Add("STRING", SqlDbType.VarChar);
-                _SqlDbTypeDic.Add("SYSTEM.DATETIME", SqlDbType.Date);
-                _SqlDbTypeDic.Add("DATETIME", SqlDbType.Date);
+                _SqlDbTypeDic.Add("SYSTEM.DATETIME", SqlDbType.DateTime);
+                _SqlDbTypeDic.Add("DATETIME", SqlDbType.DateTime);
                 _SqlDbTypeDic.Add("DATE", SqlDbType.Date);
                 _SqlDbTypeDic.Add("INT64", SqlDbType.BigInt);
                 _SqlDbTypeDic.Add("INT32", SqlDbType.Int);
