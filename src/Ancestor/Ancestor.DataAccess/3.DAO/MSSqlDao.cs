@@ -324,17 +324,29 @@ namespace Ancestor.DataAccess.DAO
                 //2015-10-12 null 的參數
                 if (paramsObjects != null)
                 {
+                    IEnumerable<SqlParameter> paras = null;
+
                     //var paras = from prop in paramsObjects.GetType().GetProperties()
                     //            select
                     //                new SqlParameter(DbSymbolize + prop.Name, (SqlDbType)GetDbType(prop.PropertyType.Name));
 
-                    var paras = paramsObjects.GetType().GetProperties().Select(x =>
-                    {
-                        var parameter = new SqlParameter(DbSymbolize + x.Name, (SqlDbType)GetDbType(x.PropertyType.Name));
-                        parameter.Value = x.GetValue(paramsObjects, null);
-                        parameter.Direction = ParameterDirection.Input;
-                        return parameter;
-                    });
+                    //2017-09-22 追加IDictionary<string, ?>的支援
+                    var type = paramsObjects.GetType();
+                    if (paramsObjects is System.Collections.IDictionary && type.IsGenericType && type.GetGenericTypeDefinition().IsAssignableFrom(typeof(Dictionary<,>)))
+                        paras = from dynamic kv in (paramsObjects as System.Collections.IDictionary)
+                                select new SqlParameter(DbSymbolize + kv.Key, (SqlDbType)GetDbType(kv.Value == null ? "string" : kv.Value.GetType().Name))
+                                {
+                                    Value = kv.Value,
+                                    Direction = ParameterDirection.Input
+                                };
+                    else
+                        paras = paramsObjects.GetType().GetProperties().Select(x =>
+                        {
+                            var parameter = new SqlParameter(DbSymbolize + x.Name, (SqlDbType)GetDbType(x.PropertyType.Name));
+                            parameter.Value = x.GetValue(paramsObjects, null);
+                            parameter.Direction = ParameterDirection.Input;
+                            return parameter;
+                        });
                     //Todo
                     if (((SqlParameter)paras.FirstOrDefault()).Value != null)
                         parameters.AddRange(paras);
@@ -860,8 +872,8 @@ namespace Ancestor.DataAccess.DAO
                 _SqlDbTypeDic.Add("VARCHAR2", SqlDbType.VarChar);
                 _SqlDbTypeDic.Add("SYSTEM.STRING", SqlDbType.VarChar);
                 _SqlDbTypeDic.Add("STRING", SqlDbType.VarChar);
-                _SqlDbTypeDic.Add("SYSTEM.DATETIME", SqlDbType.Date);
-                _SqlDbTypeDic.Add("DATETIME", SqlDbType.Date);
+                _SqlDbTypeDic.Add("SYSTEM.DATETIME", SqlDbType.DateTime);
+                _SqlDbTypeDic.Add("DATETIME", SqlDbType.DateTime);
                 _SqlDbTypeDic.Add("DATE", SqlDbType.Date);
                 _SqlDbTypeDic.Add("INT64", SqlDbType.BigInt);
                 _SqlDbTypeDic.Add("INT32", SqlDbType.Int);

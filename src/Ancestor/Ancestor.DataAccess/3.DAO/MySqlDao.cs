@@ -372,17 +372,30 @@ namespace Ancestor.DataAccess.DAO
                 //2015-10-12 null 的參數
                 if (paramsObjects != null)
                 {
+                    IEnumerable<MySqlParameter> paras = null;
+
+
+
                     //var paras = from prop in paramsObjects.GetType().GetProperties()
                     //            select
                     //                new MySqlParameter(DbSymbolize + prop.Name, (MySqlDbType)GetDbType(prop.PropertyType.Name));
-
-                    var paras = paramsObjects.GetType().GetProperties().Select(x =>
-                    {
-                        var parameter = new MySqlParameter(DbSymbolize + x.Name, (MySqlDbType)GetDbType(x.PropertyType.Name));
-                        parameter.Value = x.GetValue(paramsObjects, null);
-                        parameter.Direction = ParameterDirection.Input;
-                        return parameter;
-                    });
+                    //2017-09-22 追加IDictionary<string, ?>的支援
+                    var type = paramsObjects.GetType();
+                    if (paramsObjects is System.Collections.IDictionary && type.IsGenericType && type.GetGenericTypeDefinition().IsAssignableFrom(typeof(Dictionary<,>)))
+                        paras = from dynamic kv in (paramsObjects as System.Collections.IDictionary)
+                                select new MySqlParameter(DbSymbolize + kv.Key, (MySqlDbType)GetDbType(kv.Value == null ? "string" : kv.Value.GetType().Name))
+                                {
+                                   Value = kv.Value,
+                                   Direction = ParameterDirection.Input
+                                }; 
+                    else
+                        paras = paramsObjects.GetType().GetProperties().Select(x =>
+                        {
+                            var parameter = new MySqlParameter(DbSymbolize + x.Name, (MySqlDbType)GetDbType(x.PropertyType.Name));
+                            parameter.Value = x.GetValue(paramsObjects, null);
+                            parameter.Direction = ParameterDirection.Input;
+                            return parameter;
+                        });
                     //Todo
                     if (((MySqlParameter)paras.FirstOrDefault()).Value != null)
                         parameters.AddRange(paras);
@@ -402,7 +415,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        protected override AncestorResult Query<T>(Expression<Func<T, bool>> predicate) 
+        protected override AncestorResult Query<T>(Expression<Func<T, bool>> predicate)
         {
             string whereString = string.Empty;
             var isSuccess = false;
@@ -515,7 +528,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        protected override AncestorResult QueryNoRowid<T>(Expression<Func<T, bool>> predicate) 
+        protected override AncestorResult QueryNoRowid<T>(Expression<Func<T, bool>> predicate)
         {
             string whereString = string.Empty;
             var isSuccess = false;
@@ -629,7 +642,7 @@ namespace Ancestor.DataAccess.DAO
             returnResult.IsSuccess = isSuccess;
             return returnResult;
         }
-        
+
 
         protected override AncestorResult Update<T>(IModel valueObject, Expression<Func<T, bool>> predicate)
         {
@@ -688,8 +701,8 @@ namespace Ancestor.DataAccess.DAO
         {
             throw new NotImplementedException();
         }
-               
-        
+
+
         /// <summary>
         /// 檢查物件內的[Browsable]屬性是true 或 false
         /// true代表可以存在於欄位, 可讓程式自動帶入SQL中
@@ -859,8 +872,8 @@ namespace Ancestor.DataAccess.DAO
             // Call Dispose on your base class.
             // Free your own state (unmanaged objects).
             DB = null;
-        }       
-        
+        }
+
         ~MySqlDao()
         {
             Dispose(false);

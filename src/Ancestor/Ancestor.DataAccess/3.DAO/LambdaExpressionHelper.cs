@@ -686,6 +686,15 @@ namespace Ancestor.DataAccess.DAO
                                     return m;
                             }
                         }
+                        else if(u.NodeType == ExpressionType.Not && m.Method.DeclaringType.Name == "String")
+                        {
+                            switch (m.Method.Name)
+                            {
+                                case "Contains":
+                                    sb.Append(" NOT ");
+                                    break;
+                            }
+                        }
                     }
                     else
                         sb.Append(" NOT ");

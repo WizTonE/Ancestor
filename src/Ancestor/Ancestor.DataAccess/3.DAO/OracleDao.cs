@@ -422,10 +422,22 @@ namespace Ancestor.DataAccess.DAO
                 //2015-10-12 null 的參數
                 if (paramsObjects != null)
                 {
-                    var paras = from prop in paramsObjects.GetType().GetProperties()
+                    IEnumerable<OracleParameter> paras = null;
+
+                    //2017-09-22 追加IDictionary<string, ?>的支援
+                    var type = paramsObjects.GetType();                    
+                    if (paramsObjects is System.Collections.IDictionary && type.IsGenericType && type.GetGenericTypeDefinition().IsAssignableFrom(typeof(Dictionary<,>)))
+                        paras = from dynamic kv in (paramsObjects as System.Collections.IDictionary)
+                                select new OracleParameter(DbSymbolize + kv.Key, 
+                                                           (OracleDbType)GetDbType(kv.Value == null ? "string" : kv.Value.GetType().Name),
+                                                           kv.Value, ParameterDirection.Input);
+                    else
+                        paras = from prop in paramsObjects.GetType().GetProperties()
                                 select
                                     new OracleParameter(DbSymbolize + prop.Name, (OracleDbType)GetDbType(prop.PropertyType.Name),
                                         prop.GetValue(paramsObjects, null), ParameterDirection.Input);
+                        
+                    
                     //Todo
                     if (((OracleParameter)paras.FirstOrDefault()).Value != null)
                         parameters.AddRange(paras);
