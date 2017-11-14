@@ -60,7 +60,7 @@ namespace Ancestor.DataAccess.Factory
             _DataObjectAccessResources = new List<DataObjectAccessResource>();
             _DataObjectAccessResources.Add(new DataObjectAccessResource(DBObject.DataBase.Oracle, new OracleDao(dbOBject)));
             _DataObjectAccessResources.Add(new DataObjectAccessResource(DBObject.DataBase.MSSQL, new MSSqlDao(dbOBject)));
-            DataObjectAccessResources.Add(new DataObjectAccessResource(DBObject.DataBase.MySQL, new MySqlDao(dbOBject)));
+            _DataObjectAccessResources.Add(new DataObjectAccessResource(DBObject.DataBase.MySQL, new MySqlDao(dbOBject)));
         }
     }
 }
