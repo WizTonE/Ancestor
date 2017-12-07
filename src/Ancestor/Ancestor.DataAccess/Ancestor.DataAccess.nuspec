@@ -5,8 +5,9 @@
     <title>$id$</title>
     <projectUrl>https://wiztone.github.io/Ancestor/</projectUrl>
     <version>$version$</version>    
-    <authors>Ancestor Team</authors>	
+    <authors>Ancestor Team</authors>
     <description>$description$</description>   
     <copyright>$copyright$</copyright>	
+	<releaseNotes>Please visit: https://github.com/WizTonE/Ancestor/releases</releaseNotes>
   </metadata>
 </package>
