@@ -97,6 +97,8 @@ namespace Ancestor.DataAccess.DAO
             return _OracleDbTypeDic;
         }
 
+
+
         private string GenerateSelectString(object select_obj)
         {
             var SqlStr = new StringBuilder();
@@ -104,9 +106,10 @@ namespace Ancestor.DataAccess.DAO
             {
                 if (CheckBrowsable(select_obj, prop.Name))
                 {
-                    var FindHardWord = prop.GetCustomAttributes(typeof(HardWordAttribute), false).Count();
+                    var hardWord = prop.GetCustomAttributes(typeof(HardWordAttribute), false).FirstOrDefault();
+                    var FindHardWord = hardWord != null;
                     //遇到HardWord要用rawtohex轉成byte傳出
-                    if (FindHardWord > 0)
+                    if (FindHardWord)
                         SqlStr.Append(" rawtohex(" + prop.Name + ") " + prop.Name + " ,");
                     else
                         SqlStr.Append(" " + prop.Name + ",");
@@ -144,6 +147,7 @@ namespace Ancestor.DataAccess.DAO
                 returnResult.Message = exception.ToString();
                 isSuccess = false;
             }
+            
             returnResult.IsSuccess = isSuccess;
 
             return returnResult;
@@ -425,10 +429,10 @@ namespace Ancestor.DataAccess.DAO
                     IEnumerable<OracleParameter> paras = null;
 
                     //2017-09-22 追加IDictionary<string, ?>的支援
-                    var type = paramsObjects.GetType();                    
+                    var type = paramsObjects.GetType();
                     if (paramsObjects is System.Collections.IDictionary && type.IsGenericType && type.GetGenericTypeDefinition().IsAssignableFrom(typeof(Dictionary<,>)))
                         paras = from dynamic kv in (paramsObjects as System.Collections.IDictionary)
-                                select new OracleParameter(DbSymbolize + kv.Key, 
+                                select new OracleParameter(DbSymbolize + kv.Key,
                                                            (OracleDbType)GetDbType(kv.Value == null ? "string" : kv.Value.GetType().Name),
                                                            kv.Value, ParameterDirection.Input);
                     else
@@ -436,8 +440,8 @@ namespace Ancestor.DataAccess.DAO
                                 select
                                     new OracleParameter(DbSymbolize + prop.Name, (OracleDbType)GetDbType(prop.PropertyType.Name),
                                         prop.GetValue(paramsObjects, null), ParameterDirection.Input);
-                        
-                    
+
+
                     //Todo
                     if (((OracleParameter)paras.FirstOrDefault()).Value != null)
                         parameters.AddRange(paras);
@@ -469,18 +473,45 @@ namespace Ancestor.DataAccess.DAO
             SqlString.Append("INSERT INTO " + objectModel.GetType().Name + " (");
             foreach (PropertyInfo prop in objectModel.GetType().GetProperties())
             {
-                if (prop.GetValue(objectModel, null) != null)
+                var value = prop.GetValue(objectModel, null);
+                if (value != null)
                 {
                     if (CheckBrowsable(objectModel, prop.Name))
                     {
                         SqlString.Append(prop.Name.ToUpper() + ",");
-                        sqlValueString.Append(DbSymbolize + prop.Name.ToUpper() + ",");
+
                         var propertyType = prop.PropertyType;
                         if (prop.PropertyType.IsGenericType &&
                                 prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
                             propertyType = prop.PropertyType.GetGenericArguments()[0];
 
-                        parameters.Add(new OracleParameter(DbSymbolize + prop.Name.ToUpper(), (OracleDbType)GetDbType(propertyType.Name), prop.GetValue(objectModel, null), ParameterDirection.Input));
+                        //修正: Insert HardWord
+                        //sqlValueString.Append(DbSymbolize + prop.Name.ToUpper() + ",");
+                        //更新使用難字
+                        var hardWord = prop.GetCustomAttributes(typeof(HardWordAttribute), false).FirstOrDefault() as HardWordAttribute;
+                        var findHardWord = hardWord != null;
+                        var oracleType = (OracleDbType)GetDbType(propertyType.Name);
+                        OracleParameter oracleParameter = null;
+
+                        //如果有找到難字註記
+                        if (findHardWord && oracleType == OracleDbType.Varchar2)
+                        {
+                            oracleType = OracleDbType.Raw;
+                            var str = value.ToString();
+                            sqlValueString.Append(string.Format("UTL_RAW.CAST_TO_VARCHAR2({0}),",
+                                   DbSymbolize + prop.Name.ToUpper()));
+                            oracleParameter = new OracleParameter(DbSymbolize + prop.Name.ToUpper(), oracleType, hardWord.Encoding.GetBytes(str), ParameterDirection.Input);
+                        }
+                        //若沒有找到
+                        else
+                        {
+                            sqlValueString.Append(DbSymbolize + prop.Name.ToUpper() + ",");
+                            oracleParameter = new OracleParameter(DbSymbolize + prop.Name.ToUpper(), oracleType, value, ParameterDirection.Input);
+                        }
+                        parameters.Add(oracleParameter);
+
+
+
                     }
                 }
             }
@@ -921,7 +952,7 @@ namespace Ancestor.DataAccess.DAO
             if (CheckBrowsable(valueObject, prop.Name) && prop.Name != "ROWID")
             {
                 //SqlStringBuilder.Append(prop.Name.ToUpper() + " = :" + prop.Name.ToUpper() + ",");
-                SqlString.Append(prop.Name.ToUpper() + " = " + DbSymbolize + prop.Name.ToUpper() + ",");
+                //SqlString.Append(prop.Name.ToUpper() + " = " + DbSymbolize + prop.Name.ToUpper() + ",");
 
                 var propertyType = prop.PropertyType;
 
@@ -930,7 +961,40 @@ namespace Ancestor.DataAccess.DAO
                     propertyType = prop.PropertyType.GetGenericArguments()[0];
 
                 //如果obj value非null但長度為0, 代表需為NULL, 以DBnull.Value傳值
-                parameters.Add(new OracleParameter(DbSymbolize + prop.Name.ToUpper(), (OracleDbType)GetDbType(propertyType.Name), prop.GetValue(valueObject, null)?.ToString() != null ? prop.GetValue(valueObject, null) : DBNull.Value, ParameterDirection.Input));
+                //parameters.Add(new OracleParameter(DbSymbolize + prop.Name.ToUpper(), (OracleDbType)GetDbType(propertyType.Name), prop.GetValue(valueObject, null)?.ToString() != null ? prop.GetValue(valueObject, null) : DBNull.Value, ParameterDirection.Input));
+
+                //更新使用難字
+                var hardWord = prop.GetCustomAttributes(typeof(HardWordAttribute), false).FirstOrDefault() as HardWordAttribute;
+                var findHardWord = hardWord != null;
+                var oracleType = (OracleDbType)GetDbType(propertyType.Name);
+                OracleParameter oracleParameter = null;
+                var value = prop.GetValue(valueObject, null);
+                //如果有找到難字註記
+                if (findHardWord && oracleType == OracleDbType.Varchar2)
+                {
+                    if (value != null)    //有值，要使用UTL_RAW.CAST_TO_VARCHAR2轉換
+                    {
+                        oracleType = OracleDbType.Raw;
+                        var str = value.ToString();
+                        SqlString.Append(string.Format("{1} = UTL_RAW.CAST_TO_VARCHAR2({0}),",
+                               DbSymbolize + prop.Name.ToUpper(),
+                               prop.Name.ToUpper()));
+                        oracleParameter = new OracleParameter(DbSymbolize + prop.Name.ToUpper(), oracleType, hardWord.Encoding.GetBytes(str), ParameterDirection.Input);
+                    }
+                    else
+                    {
+                        SqlString.Append(prop.Name.ToUpper() + " = " + DbSymbolize + prop.Name.ToUpper() + ",");
+                        oracleParameter = new OracleParameter(DbSymbolize + prop.Name.ToUpper(), oracleType, DBNull.Value, ParameterDirection.Input);
+                    }
+
+                }
+                //若沒有找到
+                else
+                {
+                    SqlString.Append(prop.Name.ToUpper() + " = " + DbSymbolize + prop.Name.ToUpper() + ",");
+                    oracleParameter = new OracleParameter(DbSymbolize + prop.Name.ToUpper(), oracleType, value, ParameterDirection.Input);
+                }
+                parameters.Add(oracleParameter);
             }
         }
 
@@ -1081,7 +1145,7 @@ namespace Ancestor.DataAccess.DAO
         }
         protected override AncestorResult Query<FakeType>(Expression<Func<FakeType, bool>> predicate, Expression<Func<FakeType, object>> selectCondition, Type realType)
         {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { realType },  new Type[] { typeof(FakeType) });
+            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { realType }, new Type[] { typeof(FakeType) });
         }
 
         protected override AncestorResult Query<T1, T2>(Expression<Func<T1, T2, bool>> predicate, Expression<Func<T1, T2, object>> selectCondition)
@@ -1113,7 +1177,7 @@ namespace Ancestor.DataAccess.DAO
         }
 
         protected override AncestorResult Query<T1, T2, T3, T4, T5>(Expression<Func<T1, T2, T3, T4, T5, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, object>> selectCondition)
-        {            
+        {
             return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5) });
         }
 
@@ -1124,7 +1188,7 @@ namespace Ancestor.DataAccess.DAO
 
         protected override AncestorResult Query<T1, T2, T3, T4, T5, T6>(Expression<Func<T1, T2, T3, T4, T5, T6, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, T6, object>> selectCondition)
         {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(T6)});
+            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(T6) });
         }
 
         protected override AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6>(Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, object>> selectCondition, Type realType1, Type realType2 = null, Type realType3 = null, Type realType4 = null, Type realType5 = null, Type realType6 = null)
@@ -1146,7 +1210,7 @@ namespace Ancestor.DataAccess.DAO
             {
                 mapping = new Dictionary<Type, Type>();
                 for (int i = 0; i < queryTypes.Length; i++)
-                    if(fakeTypes[i] != queryTypes[i])
+                    if (fakeTypes[i] != queryTypes[i])
                         mapping.Add(fakeTypes[i], queryTypes[i]);
             }
             using (LambdaExpressionHelper helper = new LambdaExpressionHelper(DbSymbolize, DbLikeSymbolize, mapping))

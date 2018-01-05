@@ -9,7 +9,7 @@ namespace Ancestor.DataAccess.DAO
     {
         /// <remark>Oracle Only</remark>
         /// <summary>
-        /// Left Join 或 Righj Join使用的(+)符號
+        /// Left Join 或 Righ Join使用的(+)符號
         /// </summary>        
         /// <example>
         ///     // The result is X.PID = y.PID(+)
@@ -32,7 +32,23 @@ namespace Ancestor.DataAccess.DAO
         ///     //The result is X.BIRTHDATE BETWEEN :dateBgn AND :dateEnd
         ///     x.BIRTHDATE.Between(dateBgn, dateEnd);
         /// </example>
-        public static bool Between(this DateTime? dt, DateTime begin, DateTime end)
+        public static bool Between(this DateTime? dt, DateTime? begin, DateTime? end)
+        {
+            return true;
+        }
+        /// <summary>
+        /// 區間(Between)語句
+        /// </summary>        
+        /// <param name="begin">起始時間</param>
+        /// <param name="end">結束時間</param>
+        /// <example>
+        ///     var dateEnd = DateTime.Now;
+        ///     var dateBgn = dateEnd.AddDays(-3);
+        ///     
+        ///     //The result is X.BIRTHDATE BETWEEN :dateBgn AND :dateEnd
+        ///     x.BIRTHDATE.Between(dateBgn, dateEnd);
+        /// </example>
+        public static bool Between(this DateTime dt, DateTime? begin, DateTime? end)
         {
             return true;
         }
