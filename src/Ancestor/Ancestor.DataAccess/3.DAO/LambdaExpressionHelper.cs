@@ -675,14 +675,20 @@ namespace Ancestor.DataAccess.DAO
                             switch (m.Method.Name)
                             {
                                 case "Contains":
-                                    this.Write("(");
-                                    var position = m.Arguments[0].ToString().IndexOf(".") + 1;
-                                    var length = m.Arguments[0].ToString().Length;
-                                    this.Write(m.Arguments[0].ToString().Substring(position, length - position));
-                                    this.Visit(m.Object);
-                                    this.Write(" NOT in (" + inParameterString);
-                                    this.Write(") )");
-                                    inParameterString = string.Empty;
+                                    if (IsEmptyList(m.Object))
+                                    {
+                                        //2017-06-13:Nagilin: 當List為空時，填入1 <> 1條件避免組合出來的SQL炸裂
+                                        this.Write(" (1 <> 1) ");
+                                    }
+                                    else
+                                    {
+                                        this.Write("(");
+                                        this.Visit(m.Arguments);
+                                        this.Visit(m.Object);
+                                        this.Write(" NOT IN (" + inParameterString);
+                                        this.Write(") )");
+                                        inParameterString = string.Empty;
+                                    }                                    
                                     return m;
                             }
                         }
