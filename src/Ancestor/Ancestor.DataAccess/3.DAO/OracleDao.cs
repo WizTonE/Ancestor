@@ -99,9 +99,11 @@ namespace Ancestor.DataAccess.DAO
 
 
 
-        private string GenerateSelectString(object select_obj)
+        private string GenerateSelectString(object select_obj, bool withRowId = true)
         {
             var SqlStr = new StringBuilder();
+            if (withRowId)
+                SqlStr.Append(" ROWID,");
             foreach (PropertyInfo prop in select_obj.GetType().GetProperties())
             {
                 if (CheckBrowsable(select_obj, prop.Name))
@@ -167,7 +169,7 @@ namespace Ancestor.DataAccess.DAO
                 // 2015-08-31
                 //sqlString = QueryStringGenerator(objectModel, parameters);
                 var tableName = new T().GetType().Name;
-                SqlString.Append("SELECT " + GenerateSelectString(objectModel) + " FROM " + tableName);
+                SqlString.Append("SELECT " + GenerateSelectString(objectModel, false) + " FROM " + tableName);
                 var sqlWhereCondition = ParseWhereCondition(objectModel, parameters);
                 SqlString.Append(sqlWhereCondition);
 
@@ -310,7 +312,7 @@ namespace Ancestor.DataAccess.DAO
                     var Parameters = helper.Parameters;
                     var tableName = new T().GetType().Name;
 
-                    SqlString.Append("SELECT " + GenerateSelectString(new T()) + " FROM " + tableName);
+                    SqlString.Append("SELECT " + GenerateSelectString(new T(), false) + " FROM " + tableName);
                     SqlString.Append(whereString);
 
                     var paras = from parameter in Parameters
@@ -382,7 +384,7 @@ namespace Ancestor.DataAccess.DAO
                 //sqlString = QueryStringGenerator(objectModel, parameters);
                 SqlString.Clear();
                 var tableName = objectModel.GetType().Name;
-                SqlString.Append("SELECT " + GenerateSelectString(objectModel) + " FROM " + tableName);
+                SqlString.Append("SELECT " + GenerateSelectString(objectModel, false) + " FROM " + tableName);
                 var sqlWhereCondition = ParseWhereCondition(objectModel, parameters);
                 SqlString.Append(sqlWhereCondition);
                 sqlString = SqlString.ToString();
