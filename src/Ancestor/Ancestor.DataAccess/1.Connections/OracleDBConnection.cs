@@ -45,15 +45,33 @@ namespace Ancestor.DataAccess.Connections
                 ConnectionString = @"Data Source=(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)"
                         + "(HOST=" + dataSource + ")(PORT=1521)))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=" + dbObject.Node + ")));";
             else
-                ConnectionString = @"Data Source = " + (dbObject.IP == null ? dbObject.Node : dbObject.IP) + "; ";
+                ConnectionString = @"Data Source = " + dataSource + "; ";
 
-            ConnectionString += "User Id=" + dbObject.ID + ";Password=" + dbObject.Password + ";Pooling=true";
+            //ConnectionString += "User Id=" + dbObject.ID + ";Password=" + dbObject.Password + ";Pooling=true";
+            var connectionStrings = new List<string>
+            {
+                "User Id=" + dbObject.ID,
+                "Password=" + dbObject.Password,
+            };
 
-            // Incr Pool Size
-            //if (dbObject.IncreasePoolSize.HasValue)
-            //{
-            //    ConnectionString += "; Incr Pool Size=" + dbObject.IncreasePoolSize.Value.ToString();
-            //}
+            dbObject.ConnectionString = dbObject.ConnectionString ?? new OracleConnectionString();
+
+            var properties = dbObject.ConnectionString.GetType().GetProperties();
+            foreach (var property in properties)
+            {
+                var value = property.GetValue(dbObject.ConnectionString, null);
+                var defaultValue = property.GetCustomAttributes(typeof(DefaultAttribute), true).FirstOrDefault();
+                if (value != null)
+                {
+                    connectionStrings.Add(string.Format("{0}={1}", property.Name.Replace("_", " "), value));
+                }
+                else if(defaultValue != null)
+                {
+                    connectionStrings.Add(string.Format("{0}={1}", property.Name.Replace("_", " "), ((DefaultAttribute)defaultValue).Value));
+                }
+            }
+
+            ConnectionString += string.Join(";", connectionStrings);
 
             DBConnection.ConnectionString = ConnectionString;
         }

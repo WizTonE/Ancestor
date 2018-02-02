@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Ancestor Team")]
 [assembly: AssemblyProduct("Ancestor.DataAccess")]
-[assembly: AssemblyCopyright("Copyright © AncestorTeam 2017")]
+[assembly: AssemblyCopyright("Copyright © AncestorTeam 2018")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
@@ -32,6 +32,6 @@ using System.Runtime.InteropServices;
 // 您可以指定所有的值，也可以依照以下的方式，使用 '*' 將組建和修訂編號
 // 指定為預設值: 
 
-[assembly: AssemblyVersion("1.3.7.0")]
-[assembly: AssemblyInformationalVersion("1.3.7.0")]
+[assembly: AssemblyVersion("1.3.8.0")]
+[assembly: AssemblyInformationalVersion("1.3.8.0")]
 //[assembly: AssemblyFileVersion("1.1.0.*")]
