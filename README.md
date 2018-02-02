@@ -1,5 +1,5 @@
 # Ancestor
 An cross-platform ORM-style database tool with lambda expression support
 
-2017-08-20
-Added Jenkins auto build project
+## Getting start
+Please visit [the document](http://ancestor-document.readthedocs.io/zh_TW/latest/) to see more usages.

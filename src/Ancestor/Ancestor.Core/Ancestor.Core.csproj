@@ -50,6 +50,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AncestorResult.cs" />
+    <Compile Include="Attributes\ConnectionStringAttribute.cs" />
     <Compile Include="Attributes\HardWordAttribute.cs" />
     <Compile Include="DataTools.cs" />
     <Compile Include="DBObject.cs" />
