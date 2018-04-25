@@ -445,7 +445,7 @@ namespace Ancestor.DataAccess.DAO
 
 
                     //Todo
-                    if (((OracleParameter)paras.FirstOrDefault()).Value != null)
+                    if (paras.Count() > 0)
                         parameters.AddRange(paras);
                 }
 
