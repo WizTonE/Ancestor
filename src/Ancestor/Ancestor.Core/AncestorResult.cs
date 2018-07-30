@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
+using System;
 
 namespace Ancestor.Core
 {
@@ -18,6 +19,7 @@ namespace Ancestor.Core
         public DataTable ReturnDataTable { get; set; }
         public int EffectRows { get; set; }
         public string Message { get; set; }
+        private Exception _exception;
         public List<T> ResultList<T>() where T : class, new()
         {
             var returnList = new List<T>();
@@ -60,9 +62,10 @@ namespace Ancestor.Core
 
                 return returnList;
             }
-            catch (System.Exception)
+            catch (System.Exception ex)
             {
-                Message = "轉換型態失敗, 請確認型態是否正確";
+                _exception = ex;
+                Message = ex.Message;
                 return null;
             }
 
