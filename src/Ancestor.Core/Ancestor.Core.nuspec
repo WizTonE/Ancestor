@@ -8,6 +8,6 @@
     <authors>Ancestor Team</authors>
     <description>$description$</description>   
     <copyright>$copyright$</copyright>	
-	<releaseNotes>Please visit: https://github.com/WizTonE/Ancestor/releases</releaseNotes>
+	  <releaseNotes>https://github.com/WizTonE/Ancestor/releases/</releaseNotes>
   </metadata>
 </package>

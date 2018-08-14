@@ -1,0 +1,158 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{E94FB95F-A5C1-4DBD-AAD0-25810A531FF9}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Ancestor.DataAccess</RootNamespace>
+    <AssemblyName>Ancestor.DataAccess</AssemblyName>
+    <TargetFrameworkVersion>v4.0</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x86</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <PlatformTarget>x86</PlatformTarget>
+    <BuildPackage>true</BuildPackage>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="MySql.Data, Version=5.0.9.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d, processorArchitecture=MSIL">
+      <HintPath>..\..\packages\MySql.Data.5.0.9\lib\net\MySql.Data.dll</HintPath>
+    </Reference>
+    <Reference Include="Oracle.DataAccess, Version=2.102.2.20, Culture=neutral, PublicKeyToken=89b483f429c47342, processorArchitecture=x86">
+      <HintPath>..\..\packages\Oracle.DataAccess.x86.2.102.2.20\lib\Oracle.DataAccess.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Transactions" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Connections\BaseDbAbstractConnection.cs" />
+    <Compile Include="Interface\IConnection.cs" />
+    <Compile Include="Connections\MsSqlDBConnection.cs" />
+    <Compile Include="Connections\MySqlDbConnection.cs" />
+    <Compile Include="DAO\BaseAbstractDao.cs" />
+    <Compile Include="DAO\ExpressionExtensions.cs" />
+    <Compile Include="DAO\DataAccessObject.cs" />
+    <Compile Include="DAO\LambdaExpressionHelper.cs" />
+    <Compile Include="DAO\MSSqlDao.cs" />
+    <Compile Include="DAO\MySqlDao.cs" />
+    <Compile Include="DAO\OracleDao.cs" />
+    <Compile Include="DBAction\BaseAbstractAction.cs" />
+    <Compile Include="DBAction\DbAction.cs" />
+    <Compile Include="DBAction\ActionFactory.cs" />
+    <Compile Include="DBAction\Mapper\CommandDefinition.cs" />
+    <Compile Include="DBAction\Mapper\CommandFlags.cs" />
+    <Compile Include="DBAction\Mapper\DataTableHandler.cs" />
+    <Compile Include="DBAction\Mapper\DbString.cs" />
+    <Compile Include="DBAction\Mapper\DefaultTypeMap.cs" />
+    <Compile Include="DBAction\Mapper\DynamicParameters.CachedOutputSetters.cs" />
+    <Compile Include="DBAction\Mapper\DynamicParameters.cs" />
+    <Compile Include="DBAction\Mapper\DynamicParameters.ParamInfo.cs" />
+    <Compile Include="DBAction\Mapper\ExplicitConstructorAttribute.cs" />
+    <Compile Include="DBAction\Mapper\FeatureSupport.cs" />
+    <Compile Include="DBAction\Mapper\SimpleMemberMap.cs" />
+    <Compile Include="DBAction\Mapper\SqlDataRecordHandler.cs" />
+    <Compile Include="DBAction\Mapper\SqlDataRecordListTVPParameter.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.Async.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.CacheInfo.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.DapperRow.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.DapperRowMetaObject.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.DapperTable.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.DeserializerState.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.DontMap.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.GridReader.Async.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.GridReader.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.ICustomQueryParameter.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.IDataReader.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.Identity.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.IDynamicParameters.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.IMemberMap.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.IParameterCallbacks.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.IParameterLookup.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.ITypeHandler.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.ITypeMap.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.Link.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.LiteralToken.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.Settings.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.TypeDeserializerCache.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.TypeHandler.cs" />
+    <Compile Include="DBAction\Mapper\SqlMapper.TypeHandlerCache.cs" />
+    <Compile Include="DBAction\Mapper\TableValuedParameter.cs" />
+    <Compile Include="DBAction\Mapper\TypeExtensions.cs" />
+    <Compile Include="DBAction\Mapper\UdtTypeHandler.cs" />
+    <Compile Include="DBAction\Mapper\WrappedDataReader.cs" />
+    <Compile Include="DBAction\Mapper\WrappedReader.cs" />
+    <Compile Include="DBAction\Mapper\XmlHandlers.cs" />
+    <Compile Include="DBAction\MySqlAction.cs" />
+    <Compile Include="DBAction\MSSqlAction.cs" />
+    <Compile Include="Factory\DAOFactory.cs" />
+    <Compile Include="Factory\DAOFactoryBase.cs" />
+    <Compile Include="Factory\DBConnection.cs" />
+    <Compile Include="DBAction\OracleAction.cs" />
+    <Compile Include="Factory\ConnectionFactory.cs" />
+    <Compile Include="Connections\OracleDBConnection.cs" />
+    <Compile Include="Interface\IDAOFactory.cs" />
+    <Compile Include="Interface\IDataAccessObject.cs" />
+    <Compile Include="Interface\IDbAction.cs" />
+    <Compile Include="Interface\IDBConnection.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Ancestor.DataAccess.nuspec" />
+    <None Include="app.config">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Ancestor.Core\Ancestor.Core.csproj">
+      <Project>{0b08a6f8-554f-48d4-8944-38e7af2fe060}</Project>
+      <Name>Ancestor.Core</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>此專案參考這部電腦上所缺少的 NuGet 封裝。請啟用 NuGet 封裝還原，以下載該封裝。如需詳細資訊，請參閱 http://go.microsoft.com/fwlink/?LinkID=322105。缺少的檔案是 {0}。</ErrorText>
+    </PropertyGroup>
+  </Target>
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
