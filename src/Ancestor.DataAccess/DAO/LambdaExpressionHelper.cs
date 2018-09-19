@@ -963,6 +963,8 @@ namespace Ancestor.DataAccess.DAO
                 else if (exp.NodeType == ExpressionType.MemberAccess)
                 {
                     var m = (MemberExpression)exp;
+                    if (m.Expression.GetType().Name == "TypedParameterExpression")
+                        return false;
                     var value = Expression.Lambda(m).Compile().DynamicInvoke();
                     return value == null;
                 }
