@@ -31,14 +31,15 @@ namespace Ancestor.DataAccess
     internal class ConnectionResource
     {
         private List<ConnectionResource> _connections;
-        internal IConnection Iconnection { get; private set; }
+        private Lazy<IConnection> _connection;
+        internal IConnection Iconnection { get { return _connection.Value; } }
         internal DBObject DbObject { get; set; }
         internal DBObject.DataBase Database { get; private set; }
         internal List<ConnectionResource> Connections
         {
             get
             {
-                if(_connections == null)
+                if (_connections == null)
                 {
                     GetConnections(DbObject);
                 }
@@ -49,17 +50,17 @@ namespace Ancestor.DataAccess
         {
             DbObject = _DbObject;
         }
-        private ConnectionResource(DBObject.DataBase _DataBase, IConnection _Connection)
+        private ConnectionResource(DBObject.DataBase _DataBase, Lazy<IConnection> _Connection)
         {
             Database = _DataBase;
-            Iconnection = _Connection;
+            _connection = _Connection;
         }
         private void GetConnections(DBObject dbOBject)
         {
             _connections = new List<ConnectionResource>();
-            _connections.Add(new ConnectionResource(DBObject.DataBase.Oracle, new OracleDBConnection(dbOBject)));
-            _connections.Add(new ConnectionResource(DBObject.DataBase.MSSQL, new MsSqlDBConnection(dbOBject)));
-            _connections.Add(new ConnectionResource(DBObject.DataBase.MySQL, new MySqlDbConnection(dbOBject)));
+            _connections.Add(new ConnectionResource(DBObject.DataBase.Oracle, new Lazy<IConnection>(() => new OracleDBConnection(dbOBject))));
+            _connections.Add(new ConnectionResource(DBObject.DataBase.MSSQL, new Lazy<IConnection>(() => new MsSqlDBConnection(dbOBject))));
+            _connections.Add(new ConnectionResource(DBObject.DataBase.MySQL, new Lazy<IConnection>(() => new MySqlDbConnection(dbOBject))));
         }
     }
 }
