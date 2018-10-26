@@ -103,7 +103,7 @@ namespace Ancestor.DataAccess.DBAction
                 ErrorMessage = string.Empty;
                 DbCommand = DbConnection.CreateCommand();
                 DbCommand.CommandText = sqlString;
-                DbCommand.InitialLONGFetchSize = 32767;
+                DbCommand.InitialLONGFetchSize = -1;
                 adapter = new OracleDataAdapter();
                 //DbCommand.BindByName = true;
                 //DbCommand.AddRowid = true;

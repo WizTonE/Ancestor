@@ -16,6 +16,7 @@ namespace Ancestor.DataAccess.DAO
     {
         public List<DBParameter> Parameters { get; set; }
         private List<string> _SelectProperties;
+        private bool selectCondition = false;
         private StringBuilder sb;
         private string _orderBy = string.Empty;
         private int? _skip = null;
@@ -121,6 +122,7 @@ namespace Ancestor.DataAccess.DAO
         public string SelectString(Expression expression)
         {
             this.sb = new StringBuilder();
+            selectCondition = true;
             _SelectProperties = new List<string>();
             if (expression != null)
             {
@@ -167,10 +169,7 @@ namespace Ancestor.DataAccess.DAO
                 default:
                     break;
             }
-
-
-
-
+            selectCondition = false;
             this.sb.Append(string.Join(",", _SelectProperties));
             return this.sb.ToString();
         }
@@ -688,7 +687,7 @@ namespace Ancestor.DataAccess.DAO
                                         this.Write(" NOT IN (" + inParameterString);
                                         this.Write(") )");
                                         inParameterString = string.Empty;
-                                    }                                    
+                                    }
                                     return m;
                             }
                         }
@@ -915,7 +914,10 @@ namespace Ancestor.DataAccess.DAO
                 Type type = _typeMapping != null && _typeMapping.ContainsKey(m.Expression.Type) ? _typeMapping[m.Expression.Type] : m.Expression.Type;
 
                 sb.Append(type.Name + "." + m.Member.Name);
-                _SelectProperties.Add(type.Name + "." + m.Member.Name);
+                string ps = type.Name + "." + m.Member.Name;
+                if (selectCondition && m.Member.GetCustomAttributes(typeof(HardWordAttribute), false).Length > 0)
+                    ps = "rawtohex(" + ps + ")";
+                _SelectProperties.Add(ps);
                 //parameterString = _Symbolizer + m.Member.Name;
                 parameterString = _Symbolizer + parameterCount.ToString();
                 //parameterCount++;
@@ -963,6 +965,8 @@ namespace Ancestor.DataAccess.DAO
                 else if (exp.NodeType == ExpressionType.MemberAccess)
                 {
                     var m = (MemberExpression)exp;
+                    if (m.Expression.GetType().Name == "TypedParameterExpression")
+                        return false;
                     var value = Expression.Lambda(m).Compile().DynamicInvoke();
                     return value == null;
                 }

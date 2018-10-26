@@ -31,8 +31,9 @@ namespace Ancestor.DataAccess.Factory
 
     internal class DataObjectAccessResource
     {
+        private Lazy<IDataAccessObject> _daobject;
         private List<DataObjectAccessResource> _DataObjectAccessResources;
-        internal IDataAccessObject IDAOobject { get; private set; }
+        internal IDataAccessObject IDAOobject { get { return _daobject.Value; } }
         internal DBObject DbObject { get; set; }
         internal DBObject.DataBase Database { get; private set; }
         internal List<DataObjectAccessResource> DataObjectAccessResources
@@ -50,17 +51,17 @@ namespace Ancestor.DataAccess.Factory
         {
             DbObject = _DbObject;
         }
-        private DataObjectAccessResource(DBObject.DataBase _DataBase, IDataAccessObject _Connection)
+        private DataObjectAccessResource(DBObject.DataBase _DataBase, Lazy<IDataAccessObject> _Connection)
         {
             Database = _DataBase;
-            IDAOobject = _Connection;
+            _daobject = _Connection;
         }
         private void GetConnections(DBObject dbOBject)
         {
             _DataObjectAccessResources = new List<DataObjectAccessResource>();
-            _DataObjectAccessResources.Add(new DataObjectAccessResource(DBObject.DataBase.Oracle, new OracleDao(dbOBject)));
-            _DataObjectAccessResources.Add(new DataObjectAccessResource(DBObject.DataBase.MSSQL, new MSSqlDao(dbOBject)));
-            _DataObjectAccessResources.Add(new DataObjectAccessResource(DBObject.DataBase.MySQL, new MySqlDao(dbOBject)));
+            _DataObjectAccessResources.Add(new DataObjectAccessResource(DBObject.DataBase.Oracle, new Lazy<IDataAccessObject>(() => new OracleDao(dbOBject))));
+            _DataObjectAccessResources.Add(new DataObjectAccessResource(DBObject.DataBase.MSSQL, new Lazy<IDataAccessObject>(() => new MySqlDao(dbOBject))));
+            _DataObjectAccessResources.Add(new DataObjectAccessResource(DBObject.DataBase.MySQL, new Lazy<IDataAccessObject>(() => new MySqlDao(dbOBject))));
         }
     }
 }
