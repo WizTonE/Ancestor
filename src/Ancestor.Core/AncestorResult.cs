@@ -40,18 +40,15 @@ namespace Ancestor.Core
                         {
                             item.GetType().GetProperties().ToList().ForEach(prop => {
                                 if (prop.Name == hw.Name)
-                                {
-                                    int codepage = 950;
-                                    var attr = (HardWordAttribute)(hw.GetCustomAttributes(typeof(HardWordAttribute), false).FirstOrDefault());
-                                    if (attr.CodePage != 0)
-                                        codepage = attr.CodePage;
-                                    if(!string.IsNullOrEmpty(attr.CodeName))
-                                        codepage = Encoding.GetEncoding(attr.CodeName).CodePage;
+                                {                                    
+                                    var attr = hw.GetCustomAttributes(typeof(HardWordAttribute), false).FirstOrDefault() as HardWordAttribute;
+
+                                    var encoding = attr != null ? attr.Encoding : Encoding.GetEncoding(950);
                                     var value = prop.GetValue(item, null);
                                     if (value != null)
                                     {
                                         prop.SetValue(item,
-                                        Encoding.GetEncoding(codepage).GetString(DataTools.StringToByteArray(value.ToString())),
+                                        encoding.GetString(DataTools.StringToByteArray(value.ToString())),
                                         null);
                                     }
                                 }
