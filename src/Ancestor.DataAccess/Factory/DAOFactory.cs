@@ -60,8 +60,9 @@ namespace Ancestor.DataAccess.Factory
         {
             _DataObjectAccessResources = new List<DataObjectAccessResource>();
             _DataObjectAccessResources.Add(new DataObjectAccessResource(DBObject.DataBase.Oracle, new Lazy<IDataAccessObject>(() => new OracleDao(dbOBject))));
-            _DataObjectAccessResources.Add(new DataObjectAccessResource(DBObject.DataBase.MSSQL, new Lazy<IDataAccessObject>(() => new MySqlDao(dbOBject))));
+            _DataObjectAccessResources.Add(new DataObjectAccessResource(DBObject.DataBase.MSSQL, new Lazy<IDataAccessObject>(() => new MSSqlDao(dbOBject))));//20181105 error MSSqlDao not MySqlDao
             _DataObjectAccessResources.Add(new DataObjectAccessResource(DBObject.DataBase.MySQL, new Lazy<IDataAccessObject>(() => new MySqlDao(dbOBject))));
+            _DataObjectAccessResources.Add(new DataObjectAccessResource(DBObject.DataBase.Access, new Lazy<IDataAccessObject>(() => new OleDao(dbOBject))));
         }
     }
 }
