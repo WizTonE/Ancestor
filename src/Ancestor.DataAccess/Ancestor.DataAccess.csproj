@@ -62,6 +62,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Connections\BaseDbAbstractConnection.cs" />
+    <Compile Include="Connections\OleDBConnection.cs" />
+    <Compile Include="DAO\OleDao.cs" />
+    <Compile Include="DBAction\OleAction.cs" />
     <Compile Include="Interface\IConnection.cs" />
     <Compile Include="Connections\MsSqlDBConnection.cs" />
     <Compile Include="Connections\MySqlDbConnection.cs" />
