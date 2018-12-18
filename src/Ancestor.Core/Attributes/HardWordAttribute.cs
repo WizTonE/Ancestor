@@ -7,6 +7,7 @@ namespace Ancestor.Core
 {
     public class HardWordAttribute : Attribute
     {
+        public static Encoding DefaultEncoding;
         private int codePage;
         private string codeName;
 
@@ -36,7 +37,7 @@ namespace Ancestor.Core
         }
         public HardWordAttribute()
         {
-            CodePage = 950;
+            Encoding = DefaultEncoding ?? Encoding.GetEncoding(950);
         }
 
         public HardWordAttribute(int codepage)

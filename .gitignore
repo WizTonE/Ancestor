@@ -242,3 +242,5 @@ ModelManifest.xml
 .fake/
 /Ancestor-LocalTest.sln
 /locals/*
+LocalDemo.sln
+ConsoleApp1/
