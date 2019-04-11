@@ -105,7 +105,7 @@ namespace Ancestor.DataAccess.DBAction
                 DbCommand.CommandText = sqlString;
                 DbCommand.InitialLONGFetchSize = -1;
                 adapter = new OracleDataAdapter();
-                //DbCommand.BindByName = true;
+                DbCommand.BindByName = true;
                 //DbCommand.AddRowid = true;
 
                 if (CheckConnection(DbConnection, DbCommand, testString))
@@ -137,7 +137,7 @@ namespace Ancestor.DataAccess.DBAction
                 DbCommand = DbConnection.CreateCommand();
                 DbCommand.CommandText = sqlString;
                 adapter = new OracleDataAdapter();
-                //DbCommand.BindByName = true;
+                DbCommand.BindByName = true;
                 //DbCommand.AddRowid = true;
 
                 if (CheckConnection(DbConnection, DbCommand, testString))
@@ -167,7 +167,7 @@ namespace Ancestor.DataAccess.DBAction
                 DbCommand = DbConnection.CreateCommand();
                 DbCommand.CommandText = sqlString;
                 adapter = new OracleDataAdapter();
-                //DbCommand.BindByName = true;
+                DbCommand.BindByName = true;
                 //DbCommand.AddRowid = true;
 
                 if (CheckConnection(DbConnection, DbCommand, testString))
@@ -197,7 +197,7 @@ namespace Ancestor.DataAccess.DBAction
                 ErrorMessage = string.Empty;
                 DbCommand = DbConnection.CreateCommand();
                 DbCommand.CommandText = sqlString;
-                //DbCommand.BindByName = true;
+                DbCommand.BindByName = true;
                 DbCommand.AddRowid = true;
 
                 if (CheckConnection(DbConnection, DbCommand, testString))

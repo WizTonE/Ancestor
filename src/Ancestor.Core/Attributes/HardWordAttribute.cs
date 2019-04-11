@@ -18,7 +18,7 @@ namespace Ancestor.Core
             set
             {
                 codePage = value;
-                Encoding = Encoding.GetEncoding(value);                
+                Encoding = Encoding.GetEncoding(value);
             }
         }
         public string CodeName
@@ -33,7 +33,12 @@ namespace Ancestor.Core
         public Encoding Encoding
         {
             get { return encoding; }
-            private set { encoding = value; }
+            private set
+            {
+                encoding = value;
+                codeName = value.EncodingName;
+                codePage = value.CodePage;
+            }
         }
         public HardWordAttribute()
         {
