@@ -52,6 +52,7 @@
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.ComponentModel.DataAnnotations" />
+    <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Transactions" />
     <Reference Include="System.Xml.Linq" />
@@ -145,7 +146,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Ancestor.Core\Ancestor.Core.csproj">
-      <Project>{0b08a6f8-554f-48d4-8944-38e7af2fe060}</Project>
+      <Project>{0B08A6F8-554F-48D4-8944-38E7AF2FE060}</Project>
       <Name>Ancestor.Core</Name>
     </ProjectReference>
   </ItemGroup>

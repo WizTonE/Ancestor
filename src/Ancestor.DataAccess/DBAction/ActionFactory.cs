@@ -71,6 +71,7 @@ namespace Ancestor.DataAccess.DBAction
             _actions.Add(new DbActionResource(DBObject.DataBase.MSSQL, new MSSqlAction(dbObject)));
             _actions.Add(new DbActionResource(DBObject.DataBase.MySQL, new MySqlAction(dbObject)));
             _actions.Add((new DbActionResource(DBObject.DataBase.Oracle, new OracleAction(dbObject))));
+            _actions.Add((new DbActionResource(DBObject.DataBase.Access, new OleAction(dbObject))));
         }
     }
 }
