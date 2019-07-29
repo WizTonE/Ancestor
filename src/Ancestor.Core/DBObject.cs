@@ -23,7 +23,8 @@ namespace Ancestor.Core
             SQLlite, 
             Access, 
             MySQL,
-            Sybase
+            Sybase,
+            ManagedOracle,
         };
         //列舉連線方式
         public enum Mode { Direct, DSN, TNSNAME };
