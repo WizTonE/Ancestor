@@ -62,6 +62,7 @@ namespace Ancestor.DataAccess
             _connections.Add(new ConnectionResource(DBObject.DataBase.MSSQL, new Lazy<IConnection>(() => new MsSqlDBConnection(dbOBject))));
             _connections.Add(new ConnectionResource(DBObject.DataBase.MySQL, new Lazy<IConnection>(() => new MySqlDbConnection(dbOBject))));
 			_connections.Add(new ConnectionResource(DBObject.DataBase.Access, new Lazy<IConnection>(() => new OleDBConnection(dbOBject))));
+            _connections.Add(new ConnectionResource(DBObject.DataBase.ManagedOracle, new Lazy<IConnection>(() => new ManagedOracleDBConnection(dbOBject))));
         }
     }
 }

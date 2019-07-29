@@ -22,13 +22,27 @@ namespace Ancestor.DataAccess.DAO
         private int? _skip = null;
         private int? _take = null;
         private string _whereClause = string.Empty;
+        private string _parameterPrefix = "PARA_";
         private Dictionary<Type, Type> _typeMapping;
+        private bool _hardword = true;
 
         private string _Symbolizer { get; set; }
         private string _Connector { get; set; }
         private string parameterString { get; set; }
         private string inParameterString { get; set; }
         private int parameterCount { get; set; }
+        public bool HardwordFlag
+        {
+            get { return _hardword; }
+            set { _hardword = value; }
+        }
+
+        public string ParameterPrefix
+        {
+            get { return _parameterPrefix; }
+            set { _parameterPrefix = value; }
+        }
+
         //public enum Symbolizer
         //{
         //    [Description("@")] SqlSymbolizer,
@@ -550,7 +564,7 @@ namespace Ancestor.DataAccess.DAO
                 this.Write(" BETWEEN ");
                 this.Visit(m.Arguments[1]);
                 this.Write(" AND ");
-                parameterString = _Symbolizer + parameterCount.ToString();
+                parameterString = _Symbolizer + ParameterPrefix + parameterCount.ToString();
                 this.Visit(m.Arguments[2]);
                 this.Write(")");
                 return m;
@@ -574,7 +588,7 @@ namespace Ancestor.DataAccess.DAO
                     var t = m.Arguments.First().Type;
                     var type = _typeMapping != null && _typeMapping.ContainsKey(t) ? _typeMapping[t] : t;
 
-                    _SelectProperties.Add(GetSelectingString(type));
+                    _SelectProperties.Add(GetSelectingString(type, _hardword));
                 }
                 return m;
             }
@@ -585,16 +599,22 @@ namespace Ancestor.DataAccess.DAO
 
             return base.VisitMethodCall(m);
         }
-        private static string GetSelectingString(Type type)
+        private static string GetSelectingString(Type type, bool hardwordFlag = true)
         {
             List<string> names = new List<string>();
             foreach (PropertyInfo prop in type.GetProperties())
             {
-                var FindHardWord = prop.GetCustomAttributes(typeof(HardWordAttribute), false).Count();
-                //遇到HardWord要用rawtohex轉成byte傳出
+                
                 var name = type.Name + "." + prop.Name;
-                if (FindHardWord > 0)
-                    names.Add("rawtohex(" + name + ") " + prop.Name);
+                if (hardwordFlag)
+                {
+                    //遇到HardWord要用rawtohex轉成byte傳出
+                    var FindHardWord = prop.GetCustomAttributes(typeof(HardWordAttribute), false).Count();                    
+                    if (FindHardWord > 0)
+                        names.Add("RAWTOHEX(" + name + ") " + prop.Name);
+                    else
+                        names.Add(name);
+                }
                 else
                     names.Add(name);
             }
@@ -627,7 +647,7 @@ namespace Ancestor.DataAccess.DAO
                 }
             }
 
-            parameterString = _Symbolizer + parameterCount.ToString();
+            parameterString = _Symbolizer + ParameterPrefix + parameterCount.ToString();
             AddParameter(new DBParameter
             {
                 Name = parameterString,
@@ -691,7 +711,7 @@ namespace Ancestor.DataAccess.DAO
                                     return m;
                             }
                         }
-                        else if(u.NodeType == ExpressionType.Not && m.Method.DeclaringType.Name == "String")
+                        else if (u.NodeType == ExpressionType.Not && m.Method.DeclaringType.Name == "String")
                         {
                             switch (m.Method.Name)
                             {
@@ -814,7 +834,7 @@ namespace Ancestor.DataAccess.DAO
             }
             else if (q == null)
             {
-                parameterString = _Symbolizer + parameterCount.ToString();
+                parameterString = _Symbolizer + ParameterPrefix + parameterCount.ToString();
                 switch (Type.GetTypeCode(c.Value.GetType()))
                 {
                     case TypeCode.Boolean:
@@ -869,8 +889,8 @@ namespace Ancestor.DataAccess.DAO
                         {
                             foreach (var VARIABLE in c.Value as List<string>)
                             {
-                                parameterString = _Symbolizer + parameterCount.ToString();
-                                inParameterString += _Symbolizer + parameterCount.ToString() + ",";
+                                parameterString = _Symbolizer + ParameterPrefix + parameterCount.ToString();
+                                inParameterString += _Symbolizer + ParameterPrefix + parameterCount.ToString() + ",";
                                 AddParameter(new DBParameter
                                 {
                                     Name = parameterString,
@@ -915,11 +935,11 @@ namespace Ancestor.DataAccess.DAO
 
                 sb.Append(type.Name + "." + m.Member.Name);
                 string ps = type.Name + "." + m.Member.Name;
-                if (selectCondition && m.Member.GetCustomAttributes(typeof(HardWordAttribute), false).Length > 0)
-                    ps = "rawtohex(" + ps + ")";
+                if (selectCondition && _hardword && m.Member.GetCustomAttributes(typeof(HardWordAttribute), false).Length > 0)
+                    ps = "RAWTOHEX(" + ps + ")";
                 _SelectProperties.Add(ps);
                 //parameterString = _Symbolizer + m.Member.Name;
-                parameterString = _Symbolizer + parameterCount.ToString();
+                parameterString = _Symbolizer + ParameterPrefix + parameterCount.ToString();
                 //parameterCount++;
                 return m;
             }

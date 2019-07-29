@@ -76,7 +76,7 @@ namespace Ancestor.DataAccess.DBAction
                 try
                 {
                     var parameters = (List<MySqlParameter>)parameterCollection;
-                    DbCommand.Parameters.AddRange(parameters.ToArray());
+                    DbCommand.Parameters.AddRange(parameters.ToArray());                    
                     adapter.SelectCommand = DbCommand;
                     adapter.Fill(dataTable);
                     is_success = true;

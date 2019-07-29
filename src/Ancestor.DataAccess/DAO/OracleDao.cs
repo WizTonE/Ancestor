@@ -65,7 +65,7 @@ namespace Ancestor.DataAccess.DAO
             }
             return returnType;
         }
-
+        private const string UpdateParameterPrefix = "NEW_";
         private Dictionary<string, OracleDbType> SetOracleDbTypeList()
         {
             if (_OracleDbTypeDic == null)
@@ -112,7 +112,7 @@ namespace Ancestor.DataAccess.DAO
                     var FindHardWord = hardWord != null;
                     //遇到HardWord要用rawtohex轉成byte傳出
                     if (FindHardWord)
-                        SqlStr.Append(" rawtohex(" + prop.Name + ") " + prop.Name + " ,");
+                        SqlStr.Append(" RAWTOHEX(" + prop.Name + ") " + prop.Name + " ,");
                     else
                         SqlStr.Append(" " + prop.Name + ",");
                 }
@@ -149,7 +149,7 @@ namespace Ancestor.DataAccess.DAO
                 returnResult.Message = exception.ToString();
                 isSuccess = false;
             }
-            
+
             returnResult.IsSuccess = isSuccess;
 
             return returnResult;
@@ -948,7 +948,7 @@ namespace Ancestor.DataAccess.DAO
                 SqlString.Remove(SqlString.Length - 1, 1);
             return SqlString.ToString();
         }
-
+        
         private void UpdateAllTranslate(IModel valueObject, List<OracleParameter> parameters, StringBuilder SqlString, PropertyInfo prop)
         {
             if (CheckBrowsable(valueObject, prop.Name) && prop.Name != "ROWID")
@@ -979,22 +979,22 @@ namespace Ancestor.DataAccess.DAO
                         oracleType = OracleDbType.Raw;
                         var str = value.ToString();
                         SqlString.Append(string.Format("{1} = UTL_RAW.CAST_TO_VARCHAR2({0}),",
-                               DbSymbolize + prop.Name.ToUpper(),
+                               DbSymbolize + UpdateParameterPrefix + prop.Name.ToUpper(),
                                prop.Name.ToUpper()));
-                        oracleParameter = new OracleParameter(DbSymbolize + prop.Name.ToUpper(), oracleType, hardWord.Encoding.GetBytes(str), ParameterDirection.Input);
+                        oracleParameter = new OracleParameter(DbSymbolize + UpdateParameterPrefix + prop.Name.ToUpper(), oracleType, hardWord.Encoding.GetBytes(str), ParameterDirection.Input);
                     }
                     else
                     {
-                        SqlString.Append(prop.Name.ToUpper() + " = " + DbSymbolize + prop.Name.ToUpper() + ",");
-                        oracleParameter = new OracleParameter(DbSymbolize + prop.Name.ToUpper(), oracleType, DBNull.Value, ParameterDirection.Input);
+                        SqlString.Append(prop.Name.ToUpper() + " = " + DbSymbolize + UpdateParameterPrefix + prop.Name.ToUpper() + ",");
+                        oracleParameter = new OracleParameter(DbSymbolize + UpdateParameterPrefix + prop.Name.ToUpper(), oracleType, DBNull.Value, ParameterDirection.Input);
                     }
 
                 }
                 //若沒有找到
                 else
                 {
-                    SqlString.Append(prop.Name.ToUpper() + " = " + DbSymbolize + prop.Name.ToUpper() + ",");
-                    oracleParameter = new OracleParameter(DbSymbolize + prop.Name.ToUpper(), oracleType, value, ParameterDirection.Input);
+                    SqlString.Append(prop.Name.ToUpper() + " = " + DbSymbolize + UpdateParameterPrefix + prop.Name.ToUpper() + ",");
+                    oracleParameter = new OracleParameter(DbSymbolize + UpdateParameterPrefix + prop.Name.ToUpper(), oracleType, value, ParameterDirection.Input);
                 }
                 parameters.Add(oracleParameter);
             }
