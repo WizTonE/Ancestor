@@ -8,6 +8,7 @@ using System.Linq.Expressions;
 using System.Text;
 using Ancestor.Core;
 using System.Reflection;
+using System.Collections;
 
 namespace Ancestor.DataAccess.DAO
 {
@@ -887,14 +888,14 @@ namespace Ancestor.DataAccess.DAO
                         //throw new NotSupportedException(string.Format("The constant for '{0}' is not supported", c.Value));
                         if (c.Value.GetType().Name == "List`1")
                         {
-                            foreach (var VARIABLE in c.Value as List<string>)
+                            foreach (var VARIABLE in c.Value as IEnumerable)
                             {
                                 parameterString = _Symbolizer + ParameterPrefix + parameterCount.ToString();
                                 inParameterString += _Symbolizer + ParameterPrefix + parameterCount.ToString() + ",";
                                 AddParameter(new DBParameter
                                 {
                                     Name = parameterString,
-                                    Type = c.Type.ToString(),
+                                    Type = VARIABLE.GetType().ToString(),
                                     Size = 100,
                                     ParameterDirection = ParameterDirection.Input,
                                     Value = VARIABLE
