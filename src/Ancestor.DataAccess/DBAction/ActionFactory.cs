@@ -26,8 +26,8 @@ namespace Ancestor.DataAccess.DBAction
 
             if (resource != null && DBResource.DbAction != null)
             {
-                DBResource.DbAction.GetConnectionFactory();
-                return DBResource.DbAction;
+                DBResource.DbAction.Value.GetConnectionFactory();
+                return DBResource.DbAction.Value;
             }
 
             throw new NullReferenceException("找不到相對應的 DBAction");
@@ -37,7 +37,7 @@ namespace Ancestor.DataAccess.DBAction
     internal class DbActionResource
     {
         private List<DbActionResource> _actions;
-        internal IDbAction DbAction { get; private set; }
+        internal Lazy<IDbAction> DbAction { get; private set; }
         // 屬性注入 DBObject
         internal DBObject DbObject { get; set; }
         internal DBObject.DataBase DataBase { get; private set; }
@@ -53,14 +53,14 @@ namespace Ancestor.DataAccess.DBAction
                 return _actions;
             }
         }
-        
+
         internal DbActionResource(DBObject dbObject)
         {
             DbObject = dbObject;
         }
         // 組合 DBAction 的總清單
-        
-        private DbActionResource(DBObject.DataBase dataBase, IDbAction dbAction)
+
+        private DbActionResource(DBObject.DataBase dataBase, Lazy<IDbAction> dbAction)
         {
             DataBase = dataBase;
             DbAction = dbAction;
@@ -68,11 +68,11 @@ namespace Ancestor.DataAccess.DBAction
         private void GetActions(DBObject dbObject)
         {
             _actions = new List<DbActionResource>();
-            _actions.Add(new DbActionResource(DBObject.DataBase.MSSQL, new MSSqlAction(dbObject)));
-            _actions.Add(new DbActionResource(DBObject.DataBase.MySQL, new MySqlAction(dbObject)));
-            _actions.Add((new DbActionResource(DBObject.DataBase.Oracle, new OracleAction(dbObject))));
-            _actions.Add((new DbActionResource(DBObject.DataBase.Access, new OleAction(dbObject))));
-            _actions.Add((new DbActionResource(DBObject.DataBase.ManagedOracle, new ManagedOracleAction(dbObject))));
+            _actions.Add(new DbActionResource(DBObject.DataBase.MSSQL, new Lazy<IDbAction>(() => new MSSqlAction(dbObject))));
+            _actions.Add(new DbActionResource(DBObject.DataBase.MySQL, new Lazy<IDbAction>(() => new MySqlAction(dbObject))));
+            _actions.Add((new DbActionResource(DBObject.DataBase.Oracle, new Lazy<IDbAction>(() => new OracleAction(dbObject)))));
+            _actions.Add((new DbActionResource(DBObject.DataBase.Access, new Lazy<IDbAction>(() => new OleAction(dbObject)))));
+            _actions.Add((new DbActionResource(DBObject.DataBase.ManagedOracle, new Lazy<IDbAction>(() => new ManagedOracleAction(dbObject)))));
         }
     }
 }
