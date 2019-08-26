@@ -170,9 +170,13 @@ namespace Ancestor.DataAccess.DBAction
                 ErrorMessage = string.Empty;
                 DbCommand = DbConnection.CreateCommand();
                 DbCommand.CommandText = sqlString;
+                DbCommand.InitialLONGFetchSize = InitialLongFetchSize;
+                DbCommand.InitialLOBFetchSize = InitialLobFetchSize;
                 adapter = new OracleDataAdapter();
                 DbCommand.BindByName = true;
                 //DbCommand.AddRowid = true;
+                if (_cmdFetchSize != null)
+                    DbCommand.FetchSize = _cmdFetchSize.Value;
                 if (CheckConnection(DbConnection, DbCommand, testString))
                 {
                     try
@@ -200,8 +204,11 @@ namespace Ancestor.DataAccess.DBAction
                 DbCommand = DbConnection.CreateCommand();
                 DbCommand.CommandText = sqlString;
                 adapter = new OracleDataAdapter();
+                DbCommand.InitialLONGFetchSize = InitialLongFetchSize;
+                DbCommand.InitialLOBFetchSize = InitialLobFetchSize;                
                 DbCommand.BindByName = true;
-                //DbCommand.AddRowid = true;
+                if (_cmdFetchSize != null)
+                    DbCommand.FetchSize = _cmdFetchSize.Value;
                 if (CheckConnection(DbConnection, DbCommand, testString))
                 {
                     try
