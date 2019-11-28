@@ -24,7 +24,7 @@ namespace Ancestor.DataAccess.DAO
         private int? _take = null;
         private string _whereClause = string.Empty;
         private string _parameterPrefix = "PARA_";
-        private Dictionary<Type, Type> _typeMapping;
+        private Dictionary<Type, object> _typeMapping;
         private bool _hardword = true;
 
         private string _Symbolizer { get; set; }
@@ -112,7 +112,7 @@ namespace Ancestor.DataAccess.DAO
             }
         }
 
-        public LambdaExpressionHelper(string Symbolizer, string Connector, Dictionary<Type, Type> typeMapping = null)
+        public LambdaExpressionHelper(string Symbolizer, string Connector, Dictionary<Type, object> typeMapping = null)
         {
             _Symbolizer = Symbolizer;
             _Connector = Connector;
@@ -442,6 +442,11 @@ namespace Ancestor.DataAccess.DAO
                         this.Write(format);
                         this.Write("')");
                         return m;
+                    case "Truncate":
+                        this.Write("TRUNC(");
+                        this.Visit(m.Arguments[0]);
+                        this.Write(")");
+                        return m;
                 }
             }
 
@@ -587,9 +592,11 @@ namespace Ancestor.DataAccess.DAO
                 if (m.Arguments.Count > 0)
                 {
                     var t = m.Arguments.First().Type;
-                    var type = _typeMapping != null && _typeMapping.ContainsKey(t) ? _typeMapping[t] : t;
-
-                    _SelectProperties.Add(GetSelectingString(type, _hardword));
+                    var typeObject = _typeMapping != null && _typeMapping.ContainsKey(t) ? _typeMapping[t] : t;
+                    if(typeObject is Type)
+                        _SelectProperties.Add(GetSelectingString(typeObject as Type, null, _hardword));
+                    else
+                        _SelectProperties.Add(GetSelectingString(t, typeObject as string, _hardword));
                 }
                 return m;
             }
@@ -600,13 +607,13 @@ namespace Ancestor.DataAccess.DAO
 
             return base.VisitMethodCall(m);
         }
-        private static string GetSelectingString(Type type, bool hardwordFlag = true)
+        private static string GetSelectingString(Type type, string typeName, bool hardwordFlag = true)
         {
             List<string> names = new List<string>();
+            var prefix = (typeName ?? type.Name) + ".";
             foreach (PropertyInfo prop in type.GetProperties())
-            {
-                
-                var name = type.Name + "." + prop.Name;
+            {                
+                var name = prefix + prop.Name;
                 if (hardwordFlag)
                 {
                     //遇到HardWord要用rawtohex轉成byte傳出
@@ -622,6 +629,7 @@ namespace Ancestor.DataAccess.DAO
 
             return string.Join(", ", names);
         }
+
         protected void SetParameter(MethodCallExpression m)
         {
             object Value;
@@ -932,10 +940,12 @@ namespace Ancestor.DataAccess.DAO
         {
             if (m.Expression != null && m.Expression.NodeType == ExpressionType.Parameter)
             {
-                Type type = _typeMapping != null && _typeMapping.ContainsKey(m.Expression.Type) ? _typeMapping[m.Expression.Type] : m.Expression.Type;
+                var type = m.Expression.Type;
+                var typeObject = _typeMapping != null && _typeMapping.ContainsKey(type) ? _typeMapping[type] : type;
+                var prefix = (typeObject is Type ? (typeObject as Type).Name : typeObject as string) + ".";
 
-                sb.Append(type.Name + "." + m.Member.Name);
-                string ps = type.Name + "." + m.Member.Name;
+                sb.Append(prefix + m.Member.Name);
+                string ps = prefix + m.Member.Name;
                 if (selectCondition && _hardword && m.Member.GetCustomAttributes(typeof(HardWordAttribute), false).Length > 0)
                     ps = "RAWTOHEX(" + ps + ")";
                 _SelectProperties.Add(ps);
