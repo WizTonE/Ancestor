@@ -22,7 +22,7 @@ namespace Ancestor.DataAccess.DBAction
     /// </summary>
     public class MySqlAction : BaseAbstractAction
     {
-        MySqlTransaction DbTransaction;
+        //MySqlTransaction DbTransaction;
         MySqlConnection DbConnection { get; set; }
         MySqlCommand DbCommand { get; set; }
 

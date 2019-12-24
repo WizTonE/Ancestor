@@ -109,6 +109,17 @@ namespace Ancestor.DataAccess.DAO
         /// <summary>
         /// 取得日期部分
         /// </summary>
+        public static DateTime Truncate(this DateTime value)
+        {
+            if (value != null)
+            {
+                value = new DateTime(value.Year, value.Month, value.Day);
+            }
+            return value;
+        }
+        /// <summary>
+        /// 取得日期部分
+        /// </summary>
         public static DateTime? Truncate(this DateTime? value)
         {
             if (value != null)
@@ -143,7 +154,7 @@ namespace Ancestor.DataAccess.DAO
     }
     public class Server
     {
-        internal static readonly DateTime SYSDATE = new DateTime(99065829, DateTimeKind.Utc);
+        internal static readonly DateTime SYSDATE = DateTime.MinValue.AddTicks(49);
         public static DateTime SysDate
         {
             get { return SYSDATE; }

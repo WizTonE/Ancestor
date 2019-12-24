@@ -17,7 +17,7 @@ namespace Ancestor.DataAccess.DAO
     //  2016-09-14 Andycow0 Added DBConnection property by getter;
     //  2016-11-03 WizTonE  Added Query<T1, T2> join table function
 
-    public interface IDataAccessObject
+    public interface IDataAccessObject : IDisposable
     {
         IDbAction GetActionFactory();
         #region Function: Query
@@ -98,8 +98,6 @@ namespace Ancestor.DataAccess.DAO
         //void SaveChange();
         //void CancellChange();
         //
-        void Dispose();
-        void Dispose(bool disposing);
 
         //2016-04-27 Add Bulk Insert
         AncestorResult BulkInsert<T>(List<T> ObjList) where T : class, IModel, new();

@@ -407,16 +407,7 @@ namespace Ancestor.DataAccess.DAO
             return Delete<T>(predicate);
         }
 
-        void IDataAccessObject.Dispose()
-        {
-            Dispose();
-        }
-
-        void IDataAccessObject.Dispose(bool disposing)
-        {
-            Dispose(disposing);
-        }
-
+       
         AncestorResult IDataAccessObject.ExecuteNonQuery(string sqlString, object modelObject)
         {
             return ExecuteNonQuery(sqlString, modelObject);

@@ -16,7 +16,7 @@ namespace Ancestor.DataAccess.DAO
         //public StringBuilder SqlString { get; set; }
         internal string DbSymbolize { get; set; }
         internal string DbLikeSymbolize { get; set; }
-
+        private bool _disposed = false;
         /// <summary>DBCommand語法(Debug Only)</summary>
         internal string DBCommand
         {
@@ -38,27 +38,32 @@ namespace Ancestor.DataAccess.DAO
         {
             return null;
         }
-        // 2016-02-08 Add Dispose function for OracleDao.
-        public void Dispose()
-        {
-            try
-            {
-                this.Dispose(true);
-            }
-            // This object will be cleaned up by the Dispose method.
-            // Therefore, you should call GC.SupressFinalize to
-            // take this object off the finalization queue
-            // and prevent finalization code for this object
-            // from executing a second time.
-            finally
-            {
-                GC.SuppressFinalize(this);
-            }
-        }
-        public abstract void Dispose(bool disposing);
         ~DataAccessObject()
         {
             Dispose(false);
+        }
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                    Disposing();
+                _disposed = true;
+            }
+        }
+
+        protected virtual void Disposing()
+        {
+            if(DB != null)
+            {
+                DB.Dispose();
+                DB = null;
+            }
         }
     }
 }

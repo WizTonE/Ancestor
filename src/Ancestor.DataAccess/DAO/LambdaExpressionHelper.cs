@@ -442,14 +442,8 @@ namespace Ancestor.DataAccess.DAO
                         this.Write(format);
                         this.Write("')");
                         return m;
-                    case "Truncate":
-                        this.Write("TRUNC(");
-                        this.Visit(m.Arguments[0]);
-                        this.Write(")");
-                        return m;
                 }
             }
-
             else if (m.Method.DeclaringType == typeof(Math))
             {
                 switch (m.Method.Name)
@@ -517,7 +511,19 @@ namespace Ancestor.DataAccess.DAO
                         return m;
                 }
             }
-            if (m.Method.Name == "ToString")
+            if (m.Method.Name == "Truncate" && m.Method.DeclaringType == typeof(DAOExtensions))
+            {
+                switch (m.Method.Name)
+                {
+                    case "Truncate":
+                        Write("TRUNC(");
+                        Visit(m.Arguments[0]);
+                        Write(")");
+                        return m;
+                }
+
+            }
+            else if (m.Method.Name == "ToString")
             {
                 if (m.Object.Type != typeof(string))
                 {
@@ -593,7 +599,7 @@ namespace Ancestor.DataAccess.DAO
                 {
                     var t = m.Arguments.First().Type;
                     var typeObject = _typeMapping != null && _typeMapping.ContainsKey(t) ? _typeMapping[t] : t;
-                    if(typeObject is Type)
+                    if (typeObject is Type)
                         _SelectProperties.Add(GetSelectingString(typeObject as Type, null, _hardword));
                     else
                         _SelectProperties.Add(GetSelectingString(t, typeObject as string, _hardword));
@@ -612,12 +618,12 @@ namespace Ancestor.DataAccess.DAO
             List<string> names = new List<string>();
             var prefix = (typeName ?? type.Name) + ".";
             foreach (PropertyInfo prop in type.GetProperties())
-            {                
+            {
                 var name = prefix + prop.Name;
                 if (hardwordFlag)
                 {
                     //遇到HardWord要用rawtohex轉成byte傳出
-                    var FindHardWord = prop.GetCustomAttributes(typeof(HardWordAttribute), false).Count();                    
+                    var FindHardWord = prop.GetCustomAttributes(typeof(HardWordAttribute), false).Count();
                     if (FindHardWord > 0)
                         names.Add("RAWTOHEX(" + name + ") " + prop.Name);
                     else
@@ -725,6 +731,8 @@ namespace Ancestor.DataAccess.DAO
                             switch (m.Method.Name)
                             {
                                 case "Contains":
+                                case "StartsWith":
+                                case "EndsWith":
                                     sb.Append(" NOT ");
                                     break;
                             }
@@ -877,19 +885,27 @@ namespace Ancestor.DataAccess.DAO
                         break;
 
                     case TypeCode.DateTime:
+                        if ((DateTime)c.Value == Server.SYSDATE)
+                        {
+                            this.Write("SYSDATE");
+                        }
+                        else
+                        {
+                            this.Write(parameterString);
+                            parameterCount++;
+                            AddParameter(new DBParameter
+                            {
+                                Name = parameterString,
+                                Type = c.Type.ToString(),
+                                Size = 100,
+                                ParameterDirection = ParameterDirection.Input,
+                                Value = c.Value
+                            });
+                        }
                         //sb.Append("'");
                         //sb.Append(c.Value);
                         //sb.Append("'");
-                        this.Write(parameterString);
-                        parameterCount++;
-                        AddParameter(new DBParameter
-                        {
-                            Name = parameterString,
-                            Type = c.Type.ToString(),
-                            Size = 100,
-                            ParameterDirection = ParameterDirection.Input,
-                            Value = c.Value
-                        });
+
                         break;
 
                     case TypeCode.Object:
@@ -903,7 +919,8 @@ namespace Ancestor.DataAccess.DAO
                                 AddParameter(new DBParameter
                                 {
                                     Name = parameterString,
-                                    Type = VARIABLE.GetType().ToString(),
+                                    //TODO: If list not variable here will catch exception.
+                                    Type = VARIABLE == null ? "VARCHAR2" : VARIABLE.GetType().ToString(),
                                     Size = 100,
                                     ParameterDirection = ParameterDirection.Input,
                                     Value = VARIABLE
@@ -983,8 +1000,23 @@ namespace Ancestor.DataAccess.DAO
                 catch (Exception) { }
                 return m;
             }
+            else if (m.Expression == null && m.Member.DeclaringType == typeof(Server))
+            {
+                return VisitServerMember(m);
+            }
             else
                 throw new NotSupportedException(string.Format("The member '{0}' is not supported", m.Member.Name));
+        }
+
+        protected Expression VisitServerMember(MemberExpression node)
+        {
+            switch (node.Member.Name)
+            {
+                case "SysDate":
+                    Write("SYSDATE");
+                    break;
+            }
+            return node;
         }
 
         protected bool IsNullConstant(Expression exp)

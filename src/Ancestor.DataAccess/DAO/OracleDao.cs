@@ -449,13 +449,18 @@ namespace Ancestor.DataAccess.DAO
                                    DbSymbolize + prop.Name.ToUpper()));
                             oracleParameter = new OracleParameter(DbSymbolize + prop.Name.ToUpper(), oracleType, hardWord.Encoding.GetBytes(str), ParameterDirection.Input);
                         }
-                        //若沒有找到
+                        //若沒有找到，但是它是SysDate
+                        else if (propertyType == typeof(DateTime) && value != null && (DateTime)value == Server.SYSDATE)
+                        {
+                            sqlValueString.Append("SYSDATE,");
+                        }
                         else
                         {
                             sqlValueString.Append(DbSymbolize + prop.Name.ToUpper() + ",");
                             oracleParameter = new OracleParameter(DbSymbolize + prop.Name.ToUpper(), oracleType, value, ParameterDirection.Input);
                         }
-                        parameters.Add(oracleParameter);
+                        if (oracleParameter != null)
+                            parameters.Add(oracleParameter);
 
 
 
@@ -970,10 +975,18 @@ namespace Ancestor.DataAccess.DAO
                 //若沒有找到
                 else
                 {
-                    SqlString.Append(prop.Name.ToUpper() + " = " + DbSymbolize + UpdateParameterPrefix + prop.Name.ToUpper() + ",");
-                    oracleParameter = new OracleParameter(DbSymbolize + UpdateParameterPrefix + prop.Name.ToUpper(), oracleType, value, ParameterDirection.Input);
+                    if (propertyType == typeof(DateTime) && value != null && (DateTime)value == Server.SYSDATE)
+                    {
+                        SqlString.Append(prop.Name.ToUpper() + " = SYSDATE,");
+                    }
+                    else
+                    {
+                        SqlString.Append(prop.Name.ToUpper() + " = " + DbSymbolize + UpdateParameterPrefix + prop.Name.ToUpper() + ",");
+                        oracleParameter = new OracleParameter(DbSymbolize + UpdateParameterPrefix + prop.Name.ToUpper(), oracleType, value, ParameterDirection.Input);
+                    }
                 }
-                parameters.Add(oracleParameter);
+                if(oracleParameter != null)
+                    parameters.Add(oracleParameter);
             }
         }
 
@@ -1038,6 +1051,10 @@ namespace Ancestor.DataAccess.DAO
                         parameterName = parameterName + "1";
                         sqlConditionWhere.Append(" ROWID = " + DbSymbolize + parameterName);
                     }
+                    else if (propertyType == typeof(DateTime) && value != null && (DateTime)value == Server.SYSDATE)
+                    {
+                        sqlConditionWhere.Append(parameterName + " = SYSDATE");
+                    }
                     else
                     {
                         sqlConditionWhere.Append(parameterName + " = " + DbSymbolize + parameterName);
@@ -1072,26 +1089,7 @@ namespace Ancestor.DataAccess.DAO
 
             return myAttribute.Browsable;
         }
-        // 2016-02-08 Add Dispose function for OracleDao.
-        public override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                // Release or Dispose managed resources.
-                // Free other state (managed objects).
-                DbSymbolize = string.Empty;
-                DbLikeSymbolize = string.Empty;
-            }
-            // Set large fields to null.
-            // Call Dispose on your base class.
-            // Free your own state (unmanaged objects).
-            DB = null;
-        }
-        ~OracleDao()
-        {
-            Dispose(false);
-        }
-
+        
         protected override AncestorResult BulkInsert<T>(List<T> objList)
         {
             var SqlString = new StringBuilder();

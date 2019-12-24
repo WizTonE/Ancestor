@@ -893,7 +893,7 @@ namespace Ancestor.DataAccess.DAO
                 SqlString.Remove(SqlString.Length - 1, 1);
             return SqlString.ToString();
         }
-        
+
         private void UpdateAllTranslate(IModel valueObject, List<OracleParameter> parameters, StringBuilder SqlString, PropertyInfo prop)
         {
             if (CheckBrowsable(valueObject, prop.Name) && prop.Name != "ROWID")
@@ -1039,25 +1039,6 @@ namespace Ancestor.DataAccess.DAO
                 (BrowsableAttribute)attributes[typeof(BrowsableAttribute)];
 
             return myAttribute.Browsable;
-        }
-        // 2016-02-08 Add Dispose function for OracleDao.
-        public override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                // Release or Dispose managed resources.
-                // Free other state (managed objects).
-                DbSymbolize = string.Empty;
-                DbLikeSymbolize = string.Empty;
-            }
-            // Set large fields to null.
-            // Call Dispose on your base class.
-            // Free your own state (unmanaged objects).
-            DB = null;
-        }
-        ~ManagedOracleDao()
-        {
-            Dispose(false);
         }
 
         protected override AncestorResult BulkInsert<T>(List<T> objList)

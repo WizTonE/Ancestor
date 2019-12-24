@@ -91,20 +91,6 @@ namespace Ancestor.DataAccess.DAO
             p.Direction = direction;
             return p;
         }
-        // 2018-11-05 Add Dispose function for OleDao.
-        public override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                DbSymbolize = string.Empty;
-                DbLikeSymbolize = string.Empty;
-            }
-            DB = null;
-        }
-        ~OleDao()
-        {
-            Dispose(false);
-        }
         private string GenerateSelectString(object select_obj, bool withRowId = false)
         {
             var SqlStr = new StringBuilder();

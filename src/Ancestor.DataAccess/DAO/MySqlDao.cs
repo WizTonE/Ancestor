@@ -859,25 +859,6 @@ namespace Ancestor.DataAccess.DAO
             }
         }
 
-        public override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                // Release or Dispose managed resources.
-                // Free other state (managed objects).
-                DbSymbolize = string.Empty;
-                DbLikeSymbolize = string.Empty;
-            }
-            // Set large fields to null.
-            // Call Dispose on your base class.
-            // Free your own state (unmanaged objects).
-            DB = null;
-        }
-
-        ~MySqlDao()
-        {
-            Dispose(false);
-        }
 
         protected override AncestorResult UpdateAll(IModel valueObject, IModel whereObject)
         {

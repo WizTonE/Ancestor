@@ -1,9 +1,9 @@
 using System.Reflection;
 
 #if DEBUG
-[assembly: AssemblyVersion("1.4.6.0")]
-[assembly: AssemblyInformationalVersion("1.4.6-beta4")]
+[assembly: AssemblyVersion("1.4.7.0")]
+[assembly: AssemblyInformationalVersion("1.4.7-beta2")]
 #else
-[assembly: AssemblyVersion("1.4.5.0")]
-[assembly: AssemblyInformationalVersion("1.4.5.0")]
+[assembly: AssemblyVersion("1.4.7")]
+[assembly: AssemblyInformationalVersion("1.4.7")]
 #endif
