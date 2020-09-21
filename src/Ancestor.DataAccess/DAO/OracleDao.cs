@@ -643,8 +643,10 @@ namespace Ancestor.DataAccess.DAO
             SqlString.Append("UPDATE " + tableName + " set ");
             // 2015-09-03 update set 欄位語法, 重構為 UpdateTranslate method.
             SqlString.Append(UpdateTranslate(valueObject, parameters, UpdateMode.Original));
-
-            using (LambdaExpressionHelper helper = new LambdaExpressionHelper(DbSymbolize, DbLikeSymbolize))
+            Dictionary<Type, object> map = null;
+            if (name != null)
+                map = new Dictionary<Type, object> { { typeof(T), name } };
+            using (LambdaExpressionHelper helper = new LambdaExpressionHelper(DbSymbolize, DbLikeSymbolize, map))
             {
                 try
                 {
@@ -809,26 +811,37 @@ namespace Ancestor.DataAccess.DAO
 
             if (modelObject != null)
             {
-                foreach (PropertyInfo prop in modelObject.GetType().GetProperties())
-                {
-                    if (prop.GetValue(modelObject, null) != null)
-                    {
-                        //檢查Nullable
-                        //若為Nullable,則型態設為prop.PropertyType.GetGenericArguments()[0]
-                        //否則仍為prop.PropertyType
-                        var propertyType = prop.PropertyType;
-                        if (prop.PropertyType.IsGenericType &&
-                                prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
-                            propertyType = prop.PropertyType.GetGenericArguments()[0];
-                        if (prop.Name.ToUpper() == "ROWID")
-                            parameters.Add(new OracleParameter(DbSymbolize + prop.Name.ToUpper() + "1", (OracleDbType)GetDbType(propertyType.Name), prop.GetValue(modelObject, null).ToString().Length > 0 ? prop.GetValue(modelObject, null) : DBNull.Value, ParameterDirection.Input));
-                        else
-                            parameters.Add(new OracleParameter(DbSymbolize + prop.Name.ToUpper(), (OracleDbType)GetDbType(propertyType.Name), prop.GetValue(modelObject, null).ToString().Length > 0 ? prop.GetValue(modelObject, null) : DBNull.Value, ParameterDirection.Input));
-                    }
-                }
+                var type = modelObject.GetType();
+                if (modelObject is System.Collections.IDictionary && type.IsGenericType && type.GetGenericTypeDefinition().IsAssignableFrom(typeof(Dictionary<,>)))
+                    parameters = (from dynamic kv in (modelObject as System.Collections.IDictionary)
+                                  select new OracleParameter(DbSymbolize + kv.Key,
+                                                             (OracleDbType)GetDbType(kv.Value == null ? "string" : kv.Value.GetType().Name),
+                                                             kv.Value, ParameterDirection.Input)).ToList();
+                else
+                    parameters = (from prop in type.GetProperties()
+                                  select new OracleParameter(DbSymbolize + prop.Name, (OracleDbType)GetDbType(prop.PropertyType.Name),
+                                            prop.GetValue(modelObject, null), ParameterDirection.Input)).ToList();
+
+                //foreach (PropertyInfo prop in modelObject.GetType().GetProperties())
+                //{
+                //    if (prop.GetValue(modelObject, null) != null)
+                //    {
+                //        //檢查Nullable
+                //        //若為Nullable,則型態設為prop.PropertyType.GetGenericArguments()[0]
+                //        //否則仍為prop.PropertyType
+                //        var propertyType = prop.PropertyType;
+                //        if (prop.PropertyType.IsGenericType &&
+                //                prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                //            propertyType = prop.PropertyType.GetGenericArguments()[0];
+                //        if (prop.Name.ToUpper() == "ROWID")
+                //            parameters.Add(new OracleParameter(DbSymbolize + prop.Name.ToUpper() + "1", (OracleDbType)GetDbType(propertyType.Name), prop.GetValue(modelObject, null).ToString().Length > 0 ? prop.GetValue(modelObject, null) : DBNull.Value, ParameterDirection.Input));
+                //        else
+                //            parameters.Add(new OracleParameter(DbSymbolize + prop.Name.ToUpper(), (OracleDbType)GetDbType(propertyType.Name), prop.GetValue(modelObject, null).ToString().Length > 0 ? prop.GetValue(modelObject, null) : DBNull.Value, ParameterDirection.Input));
+                //    }
+                //}
             }
-            if (SqlString.ToString().IndexOf(":ROWID") > 0)
-                SqlString = SqlString.Replace(":ROWID", ":ROWID1");
+            //if (SqlString.ToString().IndexOf(":ROWID") > 0)
+            //    SqlString = SqlString.Replace(":ROWID", ":ROWID1");
 
             try
             {
@@ -985,7 +998,7 @@ namespace Ancestor.DataAccess.DAO
                         oracleParameter = new OracleParameter(DbSymbolize + UpdateParameterPrefix + prop.Name.ToUpper(), oracleType, value, ParameterDirection.Input);
                     }
                 }
-                if(oracleParameter != null)
+                if (oracleParameter != null)
                     parameters.Add(oracleParameter);
             }
         }
@@ -1089,7 +1102,7 @@ namespace Ancestor.DataAccess.DAO
 
             return myAttribute.Browsable;
         }
-        
+
         protected override AncestorResult BulkInsert<T>(List<T> objList)
         {
             var SqlString = new StringBuilder();
@@ -1262,8 +1275,10 @@ namespace Ancestor.DataAccess.DAO
             SqlString.Append("UPDATE " + tableName + " set ");
             // 2015-09-03 update set 欄位語法, 重構為 UpdateTranslate method.
             SqlString.Append(UpdateTranslate(valueObject, parameters, UpdateMode.All));
-
-            using (LambdaExpressionHelper helper = new LambdaExpressionHelper(DbSymbolize, DbLikeSymbolize))
+            Dictionary<Type, object> map = null;
+            if (name != null)
+                map = new Dictionary<Type, object> { { typeof(T), name } };
+            using (LambdaExpressionHelper helper = new LambdaExpressionHelper(DbSymbolize, DbLikeSymbolize, map))
             {
                 try
                 {

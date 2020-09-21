@@ -19,6 +19,7 @@ namespace Ancestor.DataAccess.DAO
 
     public interface IDataAccessObject : IDisposable
     {
+        DBObject DbObject { get; }
         IDbAction GetActionFactory();
         #region Function: Query
         #region :Sql string

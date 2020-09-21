@@ -28,6 +28,7 @@ namespace Ancestor.DataAccess.DBAction
 
         MySqlDataAdapter adapter { get; set; }
         string testString { get; set; }
+        object locker = new object();
 
         public MySqlAction()
         { }
@@ -63,32 +64,35 @@ namespace Ancestor.DataAccess.DBAction
 
         protected override bool Query(string sqlString, ICollection parameterCollection, ref DataTable dataTable)
         {
-            bool is_success = false;
-            ErrorMessage = string.Empty;
-            DbCommand = DbConnection.CreateCommand();
-            DbCommand.CommandText = sqlString;
-            adapter = new MySqlDataAdapter();
-            //DbCommand.BindByName = true;
-            //DbCommand.AddRowid = true;
-
-            if (CheckConnection(DbConnection, DbCommand, testString))
+            lock (locker)
             {
-                try
+                bool is_success = false;
+                ErrorMessage = string.Empty;
+                DbCommand = DbConnection.CreateCommand();
+                DbCommand.CommandText = sqlString;
+                adapter = new MySqlDataAdapter();
+                //DbCommand.BindByName = true;
+                //DbCommand.AddRowid = true;
+
+                if (CheckConnection(DbConnection, DbCommand, testString))
                 {
-                    var parameters = (List<MySqlParameter>)parameterCollection;
-                    DbCommand.Parameters.AddRange(parameters.ToArray());                    
-                    adapter.SelectCommand = DbCommand;
-                    adapter.Fill(dataTable);
-                    is_success = true;
+                    try
+                    {
+                        var parameters = (List<MySqlParameter>)parameterCollection;
+                        DbCommand.Parameters.AddRange(parameters.ToArray());
+                        adapter.SelectCommand = DbCommand;
+                        adapter.Fill(dataTable);
+                        is_success = true;
+                    }
+                    catch (Exception exception)
+                    {
+                        is_success = false;
+                        ErrorMessage = exception.ToString();
+                    }
                 }
-                catch (Exception exception)
-                {
-                    is_success = false;
-                    ErrorMessage = exception.ToString();
-                }
+                CloseConnection();
+                return is_success;
             }
-            CloseConnection();
-            return is_success;
         }
 
         protected override bool Query<T>(string sqlString, object parameterCollection, ref List<T> dataTable)
@@ -99,43 +103,46 @@ namespace Ancestor.DataAccess.DBAction
 
         protected override bool ExecuteNonQuery(string sqlString, ICollection parameterCollection, ref int effectRows)
         {
-            bool isSuccessful = false;
-            ErrorMessage = string.Empty;
-            DbCommand = DbConnection.CreateCommand();
-            DbCommand.CommandText = sqlString;
-            //DbCommand.BindByName = true;
-
-            if (CheckConnection(DbConnection, DbCommand, testString))
+            lock (locker)
             {
-                // 2016-05-23 Commend.
-                //if (DbTransaction == null)
-                //{
-                //    DbTransaction = DbConnection.BeginTransaction();
-                //}
-                //
-                try
-                {
-                    var parameters = (List<MySqlParameter>)parameterCollection;
-                    DbCommand.Parameters.AddRange(parameters.ToArray());
-                    DbCommand.CommandText = sqlString;
+                bool isSuccessful = false;
+                ErrorMessage = string.Empty;
+                DbCommand = DbConnection.CreateCommand();
+                DbCommand.CommandText = sqlString;
+                //DbCommand.BindByName = true;
 
-                    // 2015-09-01
-                    //DbCommand.ExecuteNonQuery();
-                    effectRows = DbCommand.ExecuteNonQuery();
-                    isSuccessful = true;
-                }
-                catch (Exception exception)
+                if (CheckConnection(DbConnection, DbCommand, testString))
                 {
                     // 2016-05-23 Commend.
-                    //DbTransaction.Rollback();
-                    isSuccessful = false;
-                    ErrorMessage = exception.ToString();
+                    //if (DbTransaction == null)
+                    //{
+                    //    DbTransaction = DbConnection.BeginTransaction();
+                    //}
+                    //
+                    try
+                    {
+                        var parameters = (List<MySqlParameter>)parameterCollection;
+                        DbCommand.Parameters.AddRange(parameters.ToArray());
+                        DbCommand.CommandText = sqlString;
+
+                        // 2015-09-01
+                        //DbCommand.ExecuteNonQuery();
+                        effectRows = DbCommand.ExecuteNonQuery();
+                        isSuccessful = true;
+                    }
+                    catch (Exception exception)
+                    {
+                        // 2016-05-23 Commend.
+                        //DbTransaction.Rollback();
+                        isSuccessful = false;
+                        ErrorMessage = exception.ToString();
+                    }
                 }
+                // 2016-04-05 commend this line for transaction feature.
+                //DbConnection.Close();
+                CloseConnection();
+                return isSuccessful;
             }
-            // 2016-04-05 commend this line for transaction feature.
-            //DbConnection.Close();
-            CloseConnection();
-            return isSuccessful;
         }
 
         protected override bool ExecuteStoredProcedure(string procedureName, bool bindbyName, ICollection parameterCollection, List<DBParameter> dBParameter)
@@ -176,7 +183,7 @@ namespace Ancestor.DataAccess.DBAction
             {
                 DbTransaction = DbConnection.BeginTransaction();
             }
-            return DbTransaction;            
+            return DbTransaction;
         }
 
         protected override IDbTransaction BeginTransaction(IsolationLevel isolationLevel)

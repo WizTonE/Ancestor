@@ -156,6 +156,7 @@ namespace Ancestor.DataAccess.DBAction
                     {
                         is_success = false;
                         ErrorMessage = exception.ToString();
+                        Error = exception;
                     }
                 }
                 CloseConnection();

@@ -165,6 +165,10 @@ namespace Ancestor.Core
                              .ToArray();
         }
 
+        public static string GetHardWord(string hex)
+        {
+            return Encoding.GetEncoding("Big5").GetString(StringToByteArray(hex));
+        }
 
     }
 }
