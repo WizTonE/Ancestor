@@ -52,8 +52,7 @@ namespace Ancestor.DataAccess.Connections
             {
                 "User Id=" + dbObject.ID,
                 "Password=" + dbObject.Password,
-            };
-
+            };            
             dbObject.ConnectionString = dbObject.ConnectionString ?? new OracleConnectionString();
 
             var properties = dbObject.ConnectionString.GetType().GetProperties();

@@ -186,61 +186,6 @@ namespace Ancestor.DataAccess.DAO
 
             return returnResult;
         }
-
-        protected override AncestorResult Query<FakeType>(Expression<Func<FakeType, bool>> predicate, Type realType)
-        {
-            string whereString = string.Empty;
-            var isSuccess = false;
-            var sqlString = string.Empty;
-            var returnResult = new AncestorResult();
-            var parameters = new List<OracleParameter>();
-            var dataTable = new DataTable();
-            var dataList = new List<object>();
-            var SqlString = new StringBuilder();
-            var mapping = new Dictionary<Type, Type> {
-                { typeof(FakeType), realType }
-            };
-            using (LambdaExpressionHelper helper = new LambdaExpressionHelper(DbSymbolize, DbLikeSymbolize, mapping))
-            {
-
-                try
-                {
-                    var rootExp = predicate.Body as Expression;
-                    whereString = helper.Translate(rootExp);
-                    var Parameters = helper.Parameters;
-                    var tableName = realType.Name;
-
-                    SqlString.Append("SELECT " + GenerateSelectString(Activator.CreateInstance(realType)) + " FROM " + tableName);
-                    SqlString.Append(whereString);
-
-                    var paras = from parameter in Parameters
-                                select new OracleParameter(parameter.Name, (OracleDbType)GetDbType(parameter.Type),
-                              parameter.Value, ParameterDirection.Input);
-                    parameters.AddRange(paras);
-
-                    var eo = new ExpandoObject();
-                    var eoColl = (ICollection<KeyValuePair<string, object>>)eo;
-                    foreach (var item in Parameters.ToDictionary(x => x.Name, x => x.Value))
-                    {
-                        eoColl.Add(item);
-                    }
-                    dynamic eoDynamic = eo;
-
-                    isSuccess = DB.Query(SqlString.ToString(), eoDynamic, ref dataList, realType);
-                    returnResult.Message = DB.ErrorMessage;
-                    returnResult.DataList = dataList;
-                }
-                catch (Exception exception)
-                {
-                    returnResult.Message = exception.ToString();
-                    isSuccess = false;
-                }
-            }
-            returnResult.IsSuccess = isSuccess;
-
-            return returnResult;
-        }
-
         protected override AncestorResult Query<T>(Expression<Func<T, bool>> predicate)
         {
             string whereString = string.Empty;
@@ -463,7 +408,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        protected override AncestorResult Insert(IModel objectModel)
+        protected override AncestorResult Insert(IModel objectModel, string name)
         {
             var SqlString = new StringBuilder();
             var sqlValueString = new StringBuilder();
@@ -472,7 +417,7 @@ namespace Ancestor.DataAccess.DAO
             var returnResult = new AncestorResult();
             var isSuccess = false;
 
-            SqlString.Append("INSERT INTO " + objectModel.GetType().Name + " (");
+            SqlString.Append("INSERT INTO " + name + " (");
             foreach (PropertyInfo prop in objectModel.GetType().GetProperties())
             {
                 var value = prop.GetValue(objectModel, null);
@@ -504,13 +449,18 @@ namespace Ancestor.DataAccess.DAO
                                    DbSymbolize + prop.Name.ToUpper()));
                             oracleParameter = new OracleParameter(DbSymbolize + prop.Name.ToUpper(), oracleType, hardWord.Encoding.GetBytes(str), ParameterDirection.Input);
                         }
-                        //若沒有找到
+                        //若沒有找到，但是它是SysDate
+                        else if (propertyType == typeof(DateTime) && value != null && (DateTime)value == Server.SYSDATE)
+                        {
+                            sqlValueString.Append("SYSDATE,");
+                        }
                         else
                         {
                             sqlValueString.Append(DbSymbolize + prop.Name.ToUpper() + ",");
                             oracleParameter = new OracleParameter(DbSymbolize + prop.Name.ToUpper(), oracleType, value, ParameterDirection.Input);
                         }
-                        parameters.Add(oracleParameter);
+                        if (oracleParameter != null)
+                            parameters.Add(oracleParameter);
 
 
 
@@ -539,8 +489,14 @@ namespace Ancestor.DataAccess.DAO
             returnResult.IsSuccess = isSuccess;
             return returnResult;
         }
+        protected override AncestorResult Insert(IModel objectModel)
+        {
+            var name = objectModel.GetType().Name;
+            return Insert(objectModel, name);
+        }
 
-        protected override AncestorResult Update(IModel valueObject, object paramsObjects)
+
+        protected override AncestorResult Update(IModel valueObject, object parameterObject, string name)
         {
             var SqlString = new StringBuilder();
             var sb2 = new StringBuilder();
@@ -548,14 +504,14 @@ namespace Ancestor.DataAccess.DAO
             var parameters = new List<OracleParameter>();
             var returnResult = new AncestorResult();
             var isSuccess = false;
-            var tableName = valueObject.GetType().Name;
+            var tableName = name;
 
             try
             {
                 SqlString.Append("UPDATE " + tableName + " set ");
                 SqlString.Append(UpdateTranslate(valueObject, parameters, UpdateMode.Original));
 
-                var sqlWhereCondition = ParseWhereCondition(paramsObjects, parameters);
+                var sqlWhereCondition = ParseWhereCondition(parameterObject, parameters);
                 SqlString.Append(sqlWhereCondition);
 
                 if (string.IsNullOrEmpty(sqlWhereCondition))
@@ -574,8 +530,12 @@ namespace Ancestor.DataAccess.DAO
             returnResult.IsSuccess = isSuccess;
             return returnResult;
         }
-
-        protected override AncestorResult Update(IModel valueObject, IModel whereObject)
+        protected override AncestorResult Update(IModel valueObject, object paramsObjects)
+        {
+            var tableName = valueObject.GetType().Name;
+            return Update(valueObject, paramsObjects, tableName);
+        }
+        protected override AncestorResult Update(IModel valueObject, IModel whereObject, string name)
         {
             var SqlString = new StringBuilder();
             var sb2 = new StringBuilder();
@@ -583,7 +543,7 @@ namespace Ancestor.DataAccess.DAO
             var parameters = new List<OracleParameter>();
             var returnResult = new AncestorResult();
             var isSuccess = false;
-            var tableName = valueObject.GetType().Name;
+            var tableName = name;
 
             try
             {
@@ -661,10 +621,15 @@ namespace Ancestor.DataAccess.DAO
 
             returnResult.IsSuccess = isSuccess;
             return returnResult;
-
         }
 
-        protected override AncestorResult Update<T>(IModel valueObject, Expression<Func<T, bool>> predicate)
+        protected override AncestorResult Update(IModel valueObject, IModel whereObject)
+        {
+            var tableName = valueObject.GetType().Name;
+            return Update(valueObject, whereObject, tableName);
+        }
+
+        protected override AncestorResult Update<T>(IModel valueObject, Expression<Func<T, bool>> predicate, string name)
         {
             string whereString = string.Empty;
             var isSuccess = false;
@@ -672,14 +637,16 @@ namespace Ancestor.DataAccess.DAO
             var returnResult = new AncestorResult();
             var parameters = new List<OracleParameter>();
             var effectRows = 0;
-            var tableName = valueObject.GetType().Name;
+            var tableName = name;
             var SqlString = new StringBuilder();
 
             SqlString.Append("UPDATE " + tableName + " set ");
             // 2015-09-03 update set 欄位語法, 重構為 UpdateTranslate method.
             SqlString.Append(UpdateTranslate(valueObject, parameters, UpdateMode.Original));
-
-            using (LambdaExpressionHelper helper = new LambdaExpressionHelper(DbSymbolize, DbLikeSymbolize))
+            Dictionary<Type, object> map = null;
+            if (name != null)
+                map = new Dictionary<Type, object> { { typeof(T), name } };
+            using (LambdaExpressionHelper helper = new LambdaExpressionHelper(DbSymbolize, DbLikeSymbolize, map))
             {
                 try
                 {
@@ -709,7 +676,13 @@ namespace Ancestor.DataAccess.DAO
 
             return returnResult;
         }
-        protected override AncestorResult Delete(IModel whereObject)
+        protected override AncestorResult Update<T>(IModel valueObject, Expression<Func<T, bool>> predicate)
+        {
+            var tableName = valueObject.GetType().Name;
+            return Update(valueObject, predicate, tableName);
+        }
+
+        protected override AncestorResult Delete(IModel whereObject, string name)
         {
             var SqlString = new StringBuilder();
             //StringBuilder sb2 = new StringBuilder();
@@ -753,7 +726,7 @@ namespace Ancestor.DataAccess.DAO
                 //sb2.Remove(sb2.Length - 4, 4);
                 //SqlStringBuilder.Append(sb2);
 
-                var tableName = whereObject.GetType().Name;
+                var tableName = name;
                 SqlString.Append("DELETE FROM " + tableName);
                 var sqlWhereCondition = ParseWhereCondition(whereObject, parameters);
 
@@ -775,7 +748,12 @@ namespace Ancestor.DataAccess.DAO
             returnResult.IsSuccess = isSuccess;
             return returnResult;
         }
-        protected override AncestorResult Delete<T>(Expression<Func<T, bool>> predicate)
+        protected override AncestorResult Delete(IModel whereObject)
+        {
+            var tableName = whereObject.GetType().Name;
+            return Delete(whereObject, tableName);
+        }
+        protected override AncestorResult Delete<T>(Expression<Func<T, bool>> predicate, string name)
         {
             string whereString = string.Empty;
             var isSuccess = false;
@@ -793,7 +771,7 @@ namespace Ancestor.DataAccess.DAO
                     whereString = helper.Translate(rootExp);
                     var Parameters = helper.Parameters;
 
-                    var tableName = new T().GetType().Name;
+                    var tableName = name;
                     sqlString = "DELETE FROM " + tableName;
                     // 2015-09-03
                     sqlString += whereString;
@@ -816,6 +794,12 @@ namespace Ancestor.DataAccess.DAO
             returnResult.IsSuccess = isSuccess;
             return returnResult;
         }
+        protected override AncestorResult Delete<T>(Expression<Func<T, bool>> predicate)
+        {
+
+            var tableName = new T().GetType().Name;
+            return Delete(predicate, tableName);
+        }
         protected override AncestorResult ExecuteNonQuery(string sqlString, object modelObject)
         {
             var SqlString = new StringBuilder();
@@ -827,26 +811,37 @@ namespace Ancestor.DataAccess.DAO
 
             if (modelObject != null)
             {
-                foreach (PropertyInfo prop in modelObject.GetType().GetProperties())
-                {
-                    if (prop.GetValue(modelObject, null) != null)
-                    {
-                        //檢查Nullable
-                        //若為Nullable,則型態設為prop.PropertyType.GetGenericArguments()[0]
-                        //否則仍為prop.PropertyType
-                        var propertyType = prop.PropertyType;
-                        if (prop.PropertyType.IsGenericType &&
-                                prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
-                            propertyType = prop.PropertyType.GetGenericArguments()[0];
-                        if (prop.Name.ToUpper() == "ROWID")
-                            parameters.Add(new OracleParameter(DbSymbolize + prop.Name.ToUpper() + "1", (OracleDbType)GetDbType(propertyType.Name), prop.GetValue(modelObject, null).ToString().Length > 0 ? prop.GetValue(modelObject, null) : DBNull.Value, ParameterDirection.Input));
-                        else
-                            parameters.Add(new OracleParameter(DbSymbolize + prop.Name.ToUpper(), (OracleDbType)GetDbType(propertyType.Name), prop.GetValue(modelObject, null).ToString().Length > 0 ? prop.GetValue(modelObject, null) : DBNull.Value, ParameterDirection.Input));
-                    }
-                }
+                var type = modelObject.GetType();
+                if (modelObject is System.Collections.IDictionary && type.IsGenericType && type.GetGenericTypeDefinition().IsAssignableFrom(typeof(Dictionary<,>)))
+                    parameters = (from dynamic kv in (modelObject as System.Collections.IDictionary)
+                                  select new OracleParameter(DbSymbolize + kv.Key,
+                                                             (OracleDbType)GetDbType(kv.Value == null ? "string" : kv.Value.GetType().Name),
+                                                             kv.Value, ParameterDirection.Input)).ToList();
+                else
+                    parameters = (from prop in type.GetProperties()
+                                  select new OracleParameter(DbSymbolize + prop.Name, (OracleDbType)GetDbType(prop.PropertyType.Name),
+                                            prop.GetValue(modelObject, null), ParameterDirection.Input)).ToList();
+
+                //foreach (PropertyInfo prop in modelObject.GetType().GetProperties())
+                //{
+                //    if (prop.GetValue(modelObject, null) != null)
+                //    {
+                //        //檢查Nullable
+                //        //若為Nullable,則型態設為prop.PropertyType.GetGenericArguments()[0]
+                //        //否則仍為prop.PropertyType
+                //        var propertyType = prop.PropertyType;
+                //        if (prop.PropertyType.IsGenericType &&
+                //                prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                //            propertyType = prop.PropertyType.GetGenericArguments()[0];
+                //        if (prop.Name.ToUpper() == "ROWID")
+                //            parameters.Add(new OracleParameter(DbSymbolize + prop.Name.ToUpper() + "1", (OracleDbType)GetDbType(propertyType.Name), prop.GetValue(modelObject, null).ToString().Length > 0 ? prop.GetValue(modelObject, null) : DBNull.Value, ParameterDirection.Input));
+                //        else
+                //            parameters.Add(new OracleParameter(DbSymbolize + prop.Name.ToUpper(), (OracleDbType)GetDbType(propertyType.Name), prop.GetValue(modelObject, null).ToString().Length > 0 ? prop.GetValue(modelObject, null) : DBNull.Value, ParameterDirection.Input));
+                //    }
+                //}
             }
-            if (SqlString.ToString().IndexOf(":ROWID") > 0)
-                SqlString = SqlString.Replace(":ROWID", ":ROWID1");
+            //if (SqlString.ToString().IndexOf(":ROWID") > 0)
+            //    SqlString = SqlString.Replace(":ROWID", ":ROWID1");
 
             try
             {
@@ -948,7 +943,7 @@ namespace Ancestor.DataAccess.DAO
                 SqlString.Remove(SqlString.Length - 1, 1);
             return SqlString.ToString();
         }
-        
+
         private void UpdateAllTranslate(IModel valueObject, List<OracleParameter> parameters, StringBuilder SqlString, PropertyInfo prop)
         {
             if (CheckBrowsable(valueObject, prop.Name) && prop.Name != "ROWID")
@@ -993,10 +988,18 @@ namespace Ancestor.DataAccess.DAO
                 //若沒有找到
                 else
                 {
-                    SqlString.Append(prop.Name.ToUpper() + " = " + DbSymbolize + UpdateParameterPrefix + prop.Name.ToUpper() + ",");
-                    oracleParameter = new OracleParameter(DbSymbolize + UpdateParameterPrefix + prop.Name.ToUpper(), oracleType, value, ParameterDirection.Input);
+                    if (propertyType == typeof(DateTime) && value != null && (DateTime)value == Server.SYSDATE)
+                    {
+                        SqlString.Append(prop.Name.ToUpper() + " = SYSDATE,");
+                    }
+                    else
+                    {
+                        SqlString.Append(prop.Name.ToUpper() + " = " + DbSymbolize + UpdateParameterPrefix + prop.Name.ToUpper() + ",");
+                        oracleParameter = new OracleParameter(DbSymbolize + UpdateParameterPrefix + prop.Name.ToUpper(), oracleType, value, ParameterDirection.Input);
+                    }
                 }
-                parameters.Add(oracleParameter);
+                if (oracleParameter != null)
+                    parameters.Add(oracleParameter);
             }
         }
 
@@ -1055,18 +1058,22 @@ namespace Ancestor.DataAccess.DAO
                     if (prop.PropertyType.IsGenericType &&
                                     prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
                         propertyType = prop.PropertyType.GetGenericArguments()[0];
-
+                    var value = prop.GetValue(objectModel, null);
                     if (parameterName == "ROWID")
                     {
                         parameterName = parameterName + "1";
                         sqlConditionWhere.Append(" ROWID = " + DbSymbolize + parameterName);
+                    }
+                    else if (propertyType == typeof(DateTime) && value != null && (DateTime)value == Server.SYSDATE)
+                    {
+                        sqlConditionWhere.Append(parameterName + " = SYSDATE");
                     }
                     else
                     {
                         sqlConditionWhere.Append(parameterName + " = " + DbSymbolize + parameterName);
                     }
                     parameters.Add(
-                            new OracleParameter(DbSymbolize + parameterName, (OracleDbType)GetDbType(propertyType.Name), prop.GetValue(objectModel, null), ParameterDirection.Input)
+                            new OracleParameter(DbSymbolize + parameterName, (OracleDbType)GetDbType(propertyType.Name), value, ParameterDirection.Input)
                             );
                     sqlConditionWhere.Append(" AND ");
                 }
@@ -1095,25 +1102,6 @@ namespace Ancestor.DataAccess.DAO
 
             return myAttribute.Browsable;
         }
-        // 2016-02-08 Add Dispose function for OracleDao.
-        public override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                // Release or Dispose managed resources.
-                // Free other state (managed objects).
-                DbSymbolize = string.Empty;
-                DbLikeSymbolize = string.Empty;
-            }
-            // Set large fields to null.
-            // Call Dispose on your base class.
-            // Free your own state (unmanaged objects).
-            DB = null;
-        }
-        ~OracleDao()
-        {
-            Dispose(false);
-        }
 
         protected override AncestorResult BulkInsert<T>(List<T> objList)
         {
@@ -1141,64 +1129,7 @@ namespace Ancestor.DataAccess.DAO
             return returnResult;
         }
 
-        protected override AncestorResult Query<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> selectCondition)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { typeof(T) });
-        }
-        protected override AncestorResult Query<FakeType>(Expression<Func<FakeType, bool>> predicate, Expression<Func<FakeType, object>> selectCondition, Type realType)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { realType }, new Type[] { typeof(FakeType) });
-        }
-
-        protected override AncestorResult Query<T1, T2>(Expression<Func<T1, T2, bool>> predicate, Expression<Func<T1, T2, object>> selectCondition)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { typeof(T1), typeof(T2) });
-        }
-        protected override AncestorResult Query<FakeType1, FakeType2>(Expression<Func<FakeType1, FakeType2, bool>> predicate, Expression<Func<FakeType1, FakeType2, object>> selectCondition, Type realType1, Type realType2 = null)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { realType1, realType2 ?? typeof(FakeType2) }, new Type[] { typeof(FakeType1), typeof(FakeType2) });
-        }
-
-        protected override AncestorResult Query<T1, T2, T3>(Expression<Func<T1, T2, T3, bool>> predicate, Expression<Func<T1, T2, T3, object>> selectCondition)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { typeof(T1), typeof(T2), typeof(T3) });
-        }
-
-        protected override AncestorResult Query<FakeType1, FakeType2, FakeType3>(Expression<Func<FakeType1, FakeType2, FakeType3, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, object>> selectCondition, Type realType1, Type realType2 = null, Type realType3 = null)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { realType1, realType2 ?? typeof(FakeType2), realType3 ?? typeof(FakeType3) }, new Type[] { typeof(FakeType1), typeof(FakeType2), typeof(FakeType3) });
-        }
-
-        protected override AncestorResult Query<T1, T2, T3, T4>(Expression<Func<T1, T2, T3, T4, bool>> predicate, Expression<Func<T1, T2, T3, T4, object>> selectCondition)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { typeof(T1), typeof(T2), typeof(T3), typeof(T4) });
-        }
-        protected override AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4>(Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, object>> selectCondition, Type realType1, Type realType2 = null, Type realType3 = null, Type realType4 = null)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { realType1, realType2 ?? typeof(FakeType2), realType3 ?? typeof(FakeType3), realType4 ?? typeof(FakeType4) }, new Type[] { typeof(FakeType1), typeof(FakeType2), typeof(FakeType3), typeof(FakeType4) });
-        }
-
-        protected override AncestorResult Query<T1, T2, T3, T4, T5>(Expression<Func<T1, T2, T3, T4, T5, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, object>> selectCondition)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5) });
-        }
-
-        protected override AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5>(Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, object>> selectCondition, Type realType1, Type realType2 = null, Type realType3 = null, Type realType4 = null, Type realType5 = null)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { realType1, realType2 ?? typeof(FakeType2), realType3 ?? typeof(FakeType3), realType4 ?? typeof(FakeType4), realType5 ?? typeof(FakeType5) }, new Type[] { typeof(FakeType1), typeof(FakeType2), typeof(FakeType3), typeof(FakeType4), typeof(FakeType5), });
-        }
-
-        protected override AncestorResult Query<T1, T2, T3, T4, T5, T6>(Expression<Func<T1, T2, T3, T4, T5, T6, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, T6, object>> selectCondition)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(T6) });
-        }
-
-        protected override AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6>(Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, object>> selectCondition, Type realType1, Type realType2 = null, Type realType3 = null, Type realType4 = null, Type realType5 = null, Type realType6 = null)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { realType1, realType2 ?? typeof(FakeType2), realType3 ?? typeof(FakeType3), realType4 ?? typeof(FakeType4), realType5 ?? typeof(FakeType5), realType6 ?? typeof(FakeType6) }, new Type[] { typeof(FakeType1), typeof(FakeType2), typeof(FakeType3), typeof(FakeType4), typeof(FakeType5), typeof(FakeType6) });
-        }
-
-        private AncestorResult QueryWithJoinCondition(Expression predicate, Expression selectCondition, Type[] queryTypes, Type[] fakeTypes = null)
+        protected override AncestorResult QueryWithJoinCondition(Expression predicate, Expression selectCondition, Type[] types, Type[] fakeTypes = null)
         {
             string whereString = string.Empty;
             var isSuccess = false;
@@ -1207,13 +1138,13 @@ namespace Ancestor.DataAccess.DAO
             var parameters = new List<OracleParameter>();
             var dataTable = new DataTable();
             var SqlString = new StringBuilder();
-            Dictionary<Type, Type> mapping = null;
-            if (fakeTypes != null && queryTypes.Length == fakeTypes.Length)
+            Dictionary<Type, object> mapping = null;
+            if (fakeTypes != null && fakeTypes.Length == types.Length)
             {
-                mapping = new Dictionary<Type, Type>();
-                for (int i = 0; i < queryTypes.Length; i++)
-                    if (fakeTypes[i] != queryTypes[i])
-                        mapping.Add(fakeTypes[i], queryTypes[i]);
+                mapping = new Dictionary<Type, object>();
+                for (int i = 0; i < types.Length; i++)
+                    if (!string.Equals(fakeTypes[i].Name, types[i].Name, StringComparison.OrdinalIgnoreCase))
+                        mapping.Add(fakeTypes[i], types[i]);
             }
             using (LambdaExpressionHelper helper = new LambdaExpressionHelper(DbSymbolize, DbLikeSymbolize, mapping))
             {
@@ -1222,7 +1153,7 @@ namespace Ancestor.DataAccess.DAO
                     var rootExp = predicate;
                     whereString = helper.Translate(rootExp);
                     var Parameters = helper.Parameters;
-                    var tableName = string.Join(", ", from type in queryTypes select type.Name);
+                    var tableName = string.Join(", ", from type in types select type.Name);
                     SqlString.Append("SELECT " + helper.SelectString(selectCondition) + " FROM " + tableName);
                     SqlString.Append(whereString);
 
@@ -1245,8 +1176,54 @@ namespace Ancestor.DataAccess.DAO
 
             return returnResult;
         }
+        protected override AncestorResult QueryWithJoinCondition(Expression predicate, Expression selectCondition, string[] names, Type[] fakeTypes = null)
+        {
+            string whereString = string.Empty;
+            var isSuccess = false;
+            var sqlString = string.Empty;
+            var returnResult = new AncestorResult();
+            var parameters = new List<OracleParameter>();
+            var dataTable = new DataTable();
+            var SqlString = new StringBuilder();
+            Dictionary<Type, object> mapping = null;
+            if (fakeTypes != null && fakeTypes.Length == names.Length)
+            {
+                mapping = new Dictionary<Type, object>();
+                for (int i = 0; i < names.Length; i++)
+                    if (!string.Equals(fakeTypes[i].Name, names[i], StringComparison.OrdinalIgnoreCase))
+                        mapping.Add(fakeTypes[i], names[i]);
+            }
+            using (LambdaExpressionHelper helper = new LambdaExpressionHelper(DbSymbolize, DbLikeSymbolize, mapping))
+            {
+                try
+                {
+                    var rootExp = predicate;
+                    whereString = helper.Translate(rootExp);
+                    var Parameters = helper.Parameters;
+                    var tableName = string.Join(", ", from name in names select name);
+                    SqlString.Append("SELECT " + helper.SelectString(selectCondition) + " FROM " + tableName);
+                    SqlString.Append(whereString);
 
-        protected override AncestorResult UpdateAll(IModel valueObject, IModel whereObject)
+                    var paras = from parameter in Parameters
+                                select new OracleParameter(parameter.Name, (OracleDbType)GetDbType(parameter.Type),
+                              parameter.Value, ParameterDirection.Input);
+                    parameters.AddRange(paras);
+
+                    isSuccess = DB.Query(SqlString.ToString(), parameters, ref dataTable);
+                    returnResult.Message = DB.ErrorMessage;
+                    returnResult.ReturnDataTable = dataTable;
+                }
+                catch (Exception exception)
+                {
+                    returnResult.Message = exception.ToString();
+                    isSuccess = false;
+                }
+            }
+            returnResult.IsSuccess = isSuccess;
+
+            return returnResult;
+        }
+        protected override AncestorResult UpdateAll(IModel valueObject, IModel whereObject, string name)
         {
             var SqlString = new StringBuilder();
             var sb2 = new StringBuilder();
@@ -1254,7 +1231,7 @@ namespace Ancestor.DataAccess.DAO
             var parameters = new List<OracleParameter>();
             var returnResult = new AncestorResult();
             var isSuccess = false;
-            var tableName = valueObject.GetType().Name;
+            var tableName = name;
 
             try
             {
@@ -1278,10 +1255,13 @@ namespace Ancestor.DataAccess.DAO
 
             returnResult.IsSuccess = isSuccess;
             return returnResult;
-
         }
-
-        protected override AncestorResult UpdateAll<T>(IModel valueObject, Expression<Func<T, bool>> predicate)
+        protected override AncestorResult UpdateAll(IModel valueObject, IModel whereObject)
+        {
+            var name = valueObject.GetType().Name;
+            return UpdateAll(valueObject, whereObject, name);
+        }
+        protected override AncestorResult UpdateAll<T>(IModel valueObject, Expression<Func<T, bool>> predicate, string name)
         {
             string whereString = string.Empty;
             var isSuccess = false;
@@ -1289,14 +1269,16 @@ namespace Ancestor.DataAccess.DAO
             var returnResult = new AncestorResult();
             var parameters = new List<OracleParameter>();
             var effectRows = 0;
-            var tableName = valueObject.GetType().Name;
+            var tableName = name;
             var SqlString = new StringBuilder();
 
             SqlString.Append("UPDATE " + tableName + " set ");
             // 2015-09-03 update set 欄位語法, 重構為 UpdateTranslate method.
             SqlString.Append(UpdateTranslate(valueObject, parameters, UpdateMode.All));
-
-            using (LambdaExpressionHelper helper = new LambdaExpressionHelper(DbSymbolize, DbLikeSymbolize))
+            Dictionary<Type, object> map = null;
+            if (name != null)
+                map = new Dictionary<Type, object> { { typeof(T), name } };
+            using (LambdaExpressionHelper helper = new LambdaExpressionHelper(DbSymbolize, DbLikeSymbolize, map))
             {
                 try
                 {
@@ -1325,6 +1307,11 @@ namespace Ancestor.DataAccess.DAO
             returnResult.IsSuccess = isSuccess;
 
             return returnResult;
+        }
+        protected override AncestorResult UpdateAll<T>(IModel valueObject, Expression<Func<T, bool>> predicate)
+        {
+            var tableName = valueObject.GetType().Name;
+            return UpdateAll(valueObject, predicate, tableName);
         }
     }
 }

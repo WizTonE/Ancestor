@@ -19,8 +19,12 @@ namespace Ancestor.DataAccess.DBAction
     /// </summary>
     public abstract class BaseAbstractAction : DbAction, IDbAction
     {
+        private bool _disposed = false;
+
+        public virtual IDbTransaction DbTransaction { get; set; }
+
         #region Virtual Function
-        protected virtual IDbConnection DBConnection { set;get; }
+        protected virtual IDbConnection DBConnection { set; get; }
 
         protected virtual IDbTransaction BeginTransaction()
         {
@@ -148,5 +152,33 @@ namespace Ancestor.DataAccess.DBAction
         }
         #endregion
 
+        ~BaseAbstractAction()
+        {
+            Dispose(false);
+        }
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                    Disposing();
+                _disposed = true;
+            }
+        }
+
+        protected virtual void Disposing()
+        {
+            if (DbTransaction != null)
+            {
+                DbRollBack();
+                DbTransaction = null;
+            }
+
+        }
     }
 }

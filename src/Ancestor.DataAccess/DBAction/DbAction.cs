@@ -11,6 +11,7 @@ namespace Ancestor.DataAccess.DBAction
     {
         public DBObject DbObject { get; set; }
         public string ErrorMessage { get; set; }
+        public Exception Error { get; set; }
         public virtual string DbCommandString
         {
             get { throw new NotImplementedException(); }

@@ -59,7 +59,7 @@ namespace Ancestor.DataAccess.DBAction
                 return _sqlDbTypeDic;
             }
         }
-        OleDbTransaction DbTransaction;
+        //OleDbTransaction DbTransaction;
         OleDbConnection DbConnection
         {
             get { return DBConnection as OleDbConnection; }

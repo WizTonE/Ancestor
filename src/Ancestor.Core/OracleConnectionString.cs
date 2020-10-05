@@ -19,6 +19,7 @@ namespace Ancestor.Core
         public int? Incr_Pool_Size { get; set; }
         [Default(true)]
         public bool? Pooling { set; get; }
+        [Default(10)]
         public int? Max_Pool_Size { get; set; }
         public int? Min_Pool_Size { get; set; }
         public bool? Persist_Security_Info { get; set; }        
