@@ -84,6 +84,11 @@ namespace Ancestor.DataAccess.DAO
             }
             return _OleDbTypeDic;
         }
+        private OleDbParameter CreateOleDbParameter(string name, Type type, object value = null, ParameterDirection direction = ParameterDirection.Input)
+        {
+            var typeName = type == null ? "string" : type.Name;
+            return CreateOleDbParameter(name, typeName, value, direction);
+        }
         private OleDbParameter CreateOleDbParameter(string name, string typeName, object value = null, ParameterDirection direction = ParameterDirection.Input)
         {
             var p = new OleDbParameter(DbSymbolize + name, (OleDbType)GetDbType(typeName));
@@ -530,10 +535,10 @@ namespace Ancestor.DataAccess.DAO
                     if (paramsObjects is System.Collections.IDictionary && type.IsGenericType && type.GetGenericTypeDefinition().IsAssignableFrom(typeof(Dictionary<,>)))
                     {
                         var dic = paramsObjects as System.Collections.IDictionary;
-                        paras = dic.Keys.Cast<string>().Select(r => CreateOleDbParameter(r, r == null ? "string" : dic[r].GetType().Name, dic[r], ParameterDirection.Input));
+                        paras = dic.Keys.Cast<string>().Select(r => CreateOleDbParameter(r, r == null ? null : dic[r].GetType(), dic[r], ParameterDirection.Input));
                     }
                     else
-                        paras = paramsObjects.GetType().GetProperties().Select(prop => CreateOleDbParameter(prop.Name, prop.PropertyType.Name, prop.GetValue(paramsObjects, null), ParameterDirection.Input));
+                        paras = paramsObjects.GetType().GetProperties().Select(prop => CreateOleDbParameter(prop.Name, prop.PropertyType, prop.GetValue(paramsObjects, null), ParameterDirection.Input));
 
                     if (paras.Count() > 0)
                         parameters.AddRange(paras);
@@ -702,9 +707,9 @@ namespace Ancestor.DataAccess.DAO
                                 prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
                             propertyType = prop.PropertyType.GetGenericArguments()[0];
                         if (prop.Name.ToUpper() == "ROWID")
-                            parameters.Add(CreateOleDbParameter(DbSymbolize + prop.Name.ToUpper() + "1", propertyType.Name, prop.GetValue(modelObject, null).ToString().Length > 0 ? prop.GetValue(modelObject, null) : DBNull.Value, ParameterDirection.Input));
+                            parameters.Add(CreateOleDbParameter(DbSymbolize + prop.Name.ToUpper() + "1", propertyType, prop.GetValue(modelObject, null).ToString().Length > 0 ? prop.GetValue(modelObject, null) : DBNull.Value, ParameterDirection.Input));
                         else
-                            parameters.Add(CreateOleDbParameter(DbSymbolize + prop.Name.ToUpper(), propertyType.Name, prop.GetValue(modelObject, null).ToString().Length > 0 ? prop.GetValue(modelObject, null) : DBNull.Value, ParameterDirection.Input));
+                            parameters.Add(CreateOleDbParameter(DbSymbolize + prop.Name.ToUpper(), propertyType, prop.GetValue(modelObject, null).ToString().Length > 0 ? prop.GetValue(modelObject, null) : DBNull.Value, ParameterDirection.Input));
                     }
                 }
             }
@@ -822,7 +827,7 @@ namespace Ancestor.DataAccess.DAO
                         SqlString.Append(parameterName + " = :" + parameterName);
                     }
                     parameters.Add(
-                            CreateOleDbParameter(DbSymbolize + parameterName, propertyType.Name, prop.GetValue(objectModel, null), ParameterDirection.Input)
+                            CreateOleDbParameter(DbSymbolize + parameterName, propertyType, prop.GetValue(objectModel, null), ParameterDirection.Input)
                             );
                     SqlString.Append(" and ");
                 }

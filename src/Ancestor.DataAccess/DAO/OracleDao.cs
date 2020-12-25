@@ -34,6 +34,8 @@ namespace Ancestor.DataAccess.DAO
             base.DbSymbolize = ":";
             base.DbLikeSymbolize = "||";
         }
+
+
         internal override object GetDbType(string typeString)
         {
             //switch (typeString.ToUpper())
@@ -385,7 +387,7 @@ namespace Ancestor.DataAccess.DAO
                     else
                         paras = from prop in paramsObjects.GetType().GetProperties()
                                 select
-                                    new OracleParameter(DbSymbolize + prop.Name, (OracleDbType)GetDbType(prop.PropertyType.Name),
+                                    new OracleParameter(DbSymbolize + prop.Name, (OracleDbType)GetDbType(prop.PropertyType),
                                         prop.GetValue(paramsObjects, null), ParameterDirection.Input);
 
 
@@ -437,7 +439,7 @@ namespace Ancestor.DataAccess.DAO
                         //更新使用難字
                         var hardWord = prop.GetCustomAttributes(typeof(HardWordAttribute), false).FirstOrDefault() as HardWordAttribute;
                         var findHardWord = hardWord != null;
-                        var oracleType = (OracleDbType)GetDbType(propertyType.Name);
+                        var oracleType = (OracleDbType)GetDbType(propertyType);
                         OracleParameter oracleParameter = null;
 
                         //如果有找到難字註記
@@ -815,11 +817,11 @@ namespace Ancestor.DataAccess.DAO
                 if (modelObject is System.Collections.IDictionary && type.IsGenericType && type.GetGenericTypeDefinition().IsAssignableFrom(typeof(Dictionary<,>)))
                     parameters = (from dynamic kv in (modelObject as System.Collections.IDictionary)
                                   select new OracleParameter(DbSymbolize + kv.Key,
-                                                             (OracleDbType)GetDbType(kv.Value == null ? "string" : kv.Value.GetType().Name),
+                                                             (OracleDbType)GetDbType(kv.Value == null ? null : kv.Value.GetType()),
                                                              kv.Value, ParameterDirection.Input)).ToList();
                 else
                     parameters = (from prop in type.GetProperties()
-                                  select new OracleParameter(DbSymbolize + prop.Name, (OracleDbType)GetDbType(prop.PropertyType.Name),
+                                  select new OracleParameter(DbSymbolize + prop.Name, (OracleDbType)GetDbType(prop.PropertyType),
                                             prop.GetValue(modelObject, null), ParameterDirection.Input)).ToList();
 
                 //foreach (PropertyInfo prop in modelObject.GetType().GetProperties())
@@ -963,7 +965,7 @@ namespace Ancestor.DataAccess.DAO
                 //更新使用難字
                 var hardWord = prop.GetCustomAttributes(typeof(HardWordAttribute), false).FirstOrDefault() as HardWordAttribute;
                 var findHardWord = hardWord != null;
-                var oracleType = (OracleDbType)GetDbType(propertyType.Name);
+                var oracleType = (OracleDbType)GetDbType(propertyType);
                 OracleParameter oracleParameter = null;
                 var value = prop.GetValue(valueObject, null);
                 //如果有找到難字註記
@@ -1031,7 +1033,7 @@ namespace Ancestor.DataAccess.DAO
                         SqlString.Append(parameterName + " = :" + parameterName);
                     }
                     parameters.Add(
-                            new OracleParameter(DbSymbolize + parameterName, (OracleDbType)GetDbType(propertyType.Name), prop.GetValue(objectModel, null), ParameterDirection.Input)
+                            new OracleParameter(DbSymbolize + parameterName, (OracleDbType)GetDbType(propertyType), prop.GetValue(objectModel, null), ParameterDirection.Input)
                             );
                     SqlString.Append(" and ");
                 }
@@ -1073,7 +1075,7 @@ namespace Ancestor.DataAccess.DAO
                         sqlConditionWhere.Append(parameterName + " = " + DbSymbolize + parameterName);
                     }
                     parameters.Add(
-                            new OracleParameter(DbSymbolize + parameterName, (OracleDbType)GetDbType(propertyType.Name), value, ParameterDirection.Input)
+                            new OracleParameter(DbSymbolize + parameterName, (OracleDbType)GetDbType(propertyType), value, ParameterDirection.Input)
                             );
                     sqlConditionWhere.Append(" AND ");
                 }

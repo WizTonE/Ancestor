@@ -29,14 +29,21 @@ namespace Ancestor.DataAccess.DAO
         {
             get
             {
-                return DB?.IsTransacting ?? false; 
+                return DB?.IsTransacting ?? false;
             }
         }
-            
+
 
         internal virtual object GetDbType(string typeString)
         {
             return null;
+        }
+        internal virtual object GetDbType(Type type)
+        {
+            if (type.IsGenericType && typeof(Nullable<>).IsAssignableFrom(type.GetGenericTypeDefinition()))
+                type = type.GetGenericArguments()[0];
+            var typeName = type == null ? "" : type.Name;
+            return GetDbType(typeName);
         }
         ~DataAccessObject()
         {
@@ -59,7 +66,7 @@ namespace Ancestor.DataAccess.DAO
 
         protected virtual void Disposing()
         {
-            if(DB != null)
+            if (DB != null)
             {
                 DB.Dispose();
                 DB = null;
