@@ -47,6 +47,14 @@ namespace Ancestor.DataAccess.Connections
             else
                 ConnectionString = @"Data Source = " + dataSource + "; ";
 
+            if(dbObject.IsLazyPassword)
+            {
+                if (dbObject.LazyPasswordSecretKey != null)
+                    dbObject.Password = LazyPassword.GetPassword(new OracleConnection(), dbObject.ID, dbObject.LazyPasswordSecretKey, dbObject.LazyPasswordSecretKeyNode);
+                else
+                    dbObject.Password = LazyPassword.GetPasswordBySchema(new OracleConnection(), dbObject.ID, dbObject.LazyPasswordSecretKeyNode);
+            }
+
             //ConnectionString += "User Id=" + dbObject.ID + ";Password=" + dbObject.Password + ";Pooling=true";
             var connectionStrings = new List<string>
             {

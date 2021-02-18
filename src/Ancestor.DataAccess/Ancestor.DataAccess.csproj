@@ -42,10 +42,12 @@
   <ItemGroup>
     <Reference Include="MySql.Data">
       <HintPath>..\..\libs\MySql.Data.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Oracle.DataAccess, Version=2.102.2.20, Culture=neutral, PublicKeyToken=89b483f429c47342, processorArchitecture=x86">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\libs\Oracle.DataAccess.dll</HintPath>
+      <Private>False</Private>
     </Reference>
     <Reference Include="Oracle.ManagedDataAccess, Version=4.121.2.0, Culture=neutral, PublicKeyToken=89b483f429c47342, processorArchitecture=MSIL">
       <HintPath>..\..\packages\Oracle.ManagedDataAccess.12.1.021\lib\net40\Oracle.ManagedDataAccess.dll</HintPath>
@@ -68,6 +70,7 @@
       <Link>Properties\AssemblyVersion.cs</Link>
     </Compile>
     <Compile Include="Connections\BaseDbAbstractConnection.cs" />
+    <Compile Include="Connections\LazyPassword.cs" />
     <Compile Include="Connections\OleDBConnection.cs" />
     <Compile Include="Connections\ManagedOracleDBConnection.cs" />
     <Compile Include="DAO\OleDao.cs" />
@@ -147,9 +150,6 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="Ancestor.DataAccess.nuspec" />
-    <None Include="app.config">
-      <SubType>Designer</SubType>
-    </None>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>

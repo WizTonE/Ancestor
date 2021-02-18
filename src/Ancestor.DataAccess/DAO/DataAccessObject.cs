@@ -38,9 +38,9 @@ namespace Ancestor.DataAccess.DAO
         {
             return null;
         }
-        internal virtual object GetDbType(Type type)
+        internal virtual object GetDbTypeFromType(Type type)
         {
-            if (type.IsGenericType && typeof(Nullable<>).IsAssignableFrom(type.GetGenericTypeDefinition()))
+            if (type != null && type.IsGenericType && typeof(Nullable<>).IsAssignableFrom(type.GetGenericTypeDefinition()))
                 type = type.GetGenericArguments()[0];
             var typeName = type == null ? "" : type.Name;
             return GetDbType(typeName);

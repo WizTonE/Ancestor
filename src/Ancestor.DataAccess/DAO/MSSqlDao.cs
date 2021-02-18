@@ -88,7 +88,7 @@ namespace Ancestor.DataAccess.DAO
 
                     var paras = Parameters.GetType().GetProperties().Select(x =>
                     {
-                        var parameter = new SqlParameter(DbSymbolize + x.Name, (SqlDbType)GetDbType(x.PropertyType));
+                        var parameter = new SqlParameter(DbSymbolize + x.Name, (SqlDbType)GetDbTypeFromType(x.PropertyType));
                         parameter.Value = x.GetValue(Parameters, null);
                         parameter.Direction = ParameterDirection.Input;
                         return parameter;
@@ -131,7 +131,7 @@ namespace Ancestor.DataAccess.DAO
                         if (prop.PropertyType.IsGenericType &&
                                 prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
                             propertyType = prop.PropertyType.GetGenericArguments()[0];
-                        var parameter = new SqlParameter(DbSymbolize + prop.Name.ToUpper(), (SqlDbType)GetDbType(propertyType));
+                        var parameter = new SqlParameter(DbSymbolize + prop.Name.ToUpper(), (SqlDbType)GetDbTypeFromType(propertyType));
                         parameter.Value = prop.GetValue(modelObject, null);
                         parameter.Direction = ParameterDirection.Input;
                         parameters.Add(parameter);
@@ -241,7 +241,7 @@ namespace Ancestor.DataAccess.DAO
                         if (prop.PropertyType.IsGenericType &&
                                 prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
                             propertyType = prop.PropertyType.GetGenericArguments()[0];
-                        var parameter = new SqlParameter(DbSymbolize + prop.Name.ToUpper(), (SqlDbType)GetDbType(propertyType));
+                        var parameter = new SqlParameter(DbSymbolize + prop.Name.ToUpper(), (SqlDbType)GetDbTypeFromType(propertyType));
                         parameter.Value = prop.GetValue(objectModel, null);
                         parameter.Direction = ParameterDirection.Input;
                         parameters.Add(parameter);
@@ -334,7 +334,7 @@ namespace Ancestor.DataAccess.DAO
                     var type = paramsObjects.GetType();
                     if (paramsObjects is System.Collections.IDictionary && type.IsGenericType && type.GetGenericTypeDefinition().IsAssignableFrom(typeof(Dictionary<,>)))
                         paras = from dynamic kv in (paramsObjects as System.Collections.IDictionary)
-                                select new SqlParameter(DbSymbolize + kv.Key, (SqlDbType)GetDbType(kv.Value == null ? null : kv.Value.GetType()))
+                                select new SqlParameter(DbSymbolize + kv.Key, (SqlDbType)GetDbTypeFromType(kv.Value == null ? null : kv.Value.GetType()))
                                 {
                                     Value = kv.Value,
                                     Direction = ParameterDirection.Input
@@ -342,7 +342,7 @@ namespace Ancestor.DataAccess.DAO
                     else
                         paras = paramsObjects.GetType().GetProperties().Select(x =>
                         {
-                            var parameter = new SqlParameter(DbSymbolize + x.Name, (SqlDbType)GetDbType(x.PropertyType));
+                            var parameter = new SqlParameter(DbSymbolize + x.Name, (SqlDbType)GetDbTypeFromType(x.PropertyType));
                             parameter.Value = x.GetValue(paramsObjects, null);
                             parameter.Direction = ParameterDirection.Input;
                             return parameter;
@@ -391,7 +391,7 @@ namespace Ancestor.DataAccess.DAO
 
                     var paras = Parameters.Select(x =>
                     {
-                        var parameter = new SqlParameter(x.Name, (SqlDbType)GetDbType(x.Value.GetType()));
+                        var parameter = new SqlParameter(x.Name, (SqlDbType)GetDbTypeFromType(x.Value.GetType()));
                         parameter.Value = x.Value;
                         parameter.Direction = ParameterDirection.Input;
                         return parameter;
@@ -472,7 +472,7 @@ namespace Ancestor.DataAccess.DAO
 
                     var paras = Parameters.Select(x =>
                     {
-                        var parameter = new SqlParameter(x.Name, (SqlDbType)GetDbType(x.Value.GetType()));
+                        var parameter = new SqlParameter(x.Name, (SqlDbType)GetDbTypeFromType(x.Value.GetType()));
                         parameter.Value = x.Value;
                         parameter.Direction = ParameterDirection.Input;
                         return parameter;
@@ -514,7 +514,7 @@ namespace Ancestor.DataAccess.DAO
                 {
                     var paras = paramsObjects.GetType().GetProperties().Select(x =>
                     {
-                        var parameter = new SqlParameter(DbSymbolize + x.Name, (SqlDbType)GetDbType(x.PropertyType));
+                        var parameter = new SqlParameter(DbSymbolize + x.Name, (SqlDbType)GetDbTypeFromType(x.PropertyType));
                         parameter.Value = x.GetValue(valueObject, null);
                         parameter.Direction = ParameterDirection.Input;
                         return parameter;
@@ -814,7 +814,7 @@ namespace Ancestor.DataAccess.DAO
 
                     sqlConditionWhere.Append(parameterName + " = " + DbSymbolize + parameterName);
 
-                    var parameter = new SqlParameter(DbSymbolize + prop.Name.ToUpper(), (SqlDbType)GetDbType(propertyType));
+                    var parameter = new SqlParameter(DbSymbolize + prop.Name.ToUpper(), (SqlDbType)GetDbTypeFromType(propertyType));
                     parameter.Value = prop.GetValue(objectModel, null);
                     parameter.Direction = ParameterDirection.Input;
                     parameters.Add(parameter);
@@ -928,7 +928,7 @@ namespace Ancestor.DataAccess.DAO
 
                 //如果obj value非null但長度為0, 代表需為NULL, 以DBnull.Value傳值
                 //parameters.Add(new SqlParameter(DbSymbolize + prop.Name.ToUpper(), (SqlDbType)GetDbType(propertyType.Name), prop.GetValue(valueObject, null).ToString().Length > 0 ? prop.GetValue(valueObject, null) : DBNull.Value, ParameterDirection.Input));
-                var parameter = new SqlParameter(DbSymbolize + prop.Name.ToUpper(), (SqlDbType)GetDbType(prop.PropertyType))
+                var parameter = new SqlParameter(DbSymbolize + prop.Name.ToUpper(), (SqlDbType)GetDbTypeFromType(prop.PropertyType))
                 {
                     Value = prop.GetValue(valueObject, null)?.ToString() != null ? prop.GetValue(valueObject, null) : DBNull.Value,
                     Direction = ParameterDirection.Input

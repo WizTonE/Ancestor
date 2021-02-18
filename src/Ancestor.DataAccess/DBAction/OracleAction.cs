@@ -127,6 +127,46 @@ namespace Ancestor.DataAccess.DBAction
             testString = "select 1 from dual";
         }
 
+        private class TimeoutObject : IDisposable
+        {
+            private bool _disposed = false;
+            private System.Timers.Timer _timer;
+            public TimeoutObject()
+            {
+                if (AncestorGlobalOptions.EnableTimeout)
+                {
+                    _timer = new System.Timers.Timer(AncestorGlobalOptions.TimeoutInterval);
+                    _timer.Elapsed += (s, e) => throw new TimeoutException("execute timeout on " + e.SignalTime.ToString("yyyy/MM/dd HH:mm:ss"));
+                    _timer.Start();
+                }
+            }
+
+
+
+            ~TimeoutObject()
+            {
+                Dispose(false);
+            }
+            public void Dispose()
+            {
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+            protected void Dispose(bool disposing)
+            {
+                if (_disposed)
+                {
+                    if (disposing)
+                    {
+                        if (_timer != null)
+                        {
+                            _timer.Stop();
+                        }
+                    }
+                    _disposed = true;
+                }
+            }
+        }
         protected override bool Query(string sqlString, ICollection parameterCollection, ref DataTable dataTable)
         {
             lock (locker)
@@ -142,24 +182,28 @@ namespace Ancestor.DataAccess.DBAction
                 //DbCommand.AddRowid = true;
                 if (_cmdFetchSize != null)
                     DbCommand.FetchSize = _cmdFetchSize.Value;
-                if (CheckConnection(DbConnection, DbCommand, testString))
+                using (var timeout = new TimeoutObject())
                 {
-                    try
+                    if (CheckConnection(DbConnection, DbCommand, testString))
                     {
-                        var parameters = (List<OracleParameter>)parameterCollection;
-                        DbCommand.Parameters.AddRange(parameters.ToArray());
-                        adapter.SelectCommand = DbCommand;
-                        adapter.Fill(dataTable);
-                        is_success = true;
+                        try
+                        {
+                            var parameters = (List<OracleParameter>)parameterCollection;
+                            DbCommand.Parameters.AddRange(parameters.ToArray());
+                            adapter.SelectCommand = DbCommand;
+                            adapter.Fill(dataTable);
+                            is_success = true;
+                        }
+                        catch (Exception exception)
+                        {
+                            is_success = false;
+                            ErrorMessage = exception.ToString();
+                            Error = exception;
+                        }
                     }
-                    catch (Exception exception)
-                    {
-                        is_success = false;
-                        ErrorMessage = exception.ToString();
-                        Error = exception;
-                    }
+
+                    CloseConnection();
                 }
-                CloseConnection();
                 return is_success;
             }
         }
@@ -178,21 +222,25 @@ namespace Ancestor.DataAccess.DBAction
                 //DbCommand.AddRowid = true;
                 if (_cmdFetchSize != null)
                     DbCommand.FetchSize = _cmdFetchSize.Value;
-                if (CheckConnection(DbConnection, DbCommand, testString))
+                using (var timeout = new TimeoutObject())
                 {
-                    try
+                    if (CheckConnection(DbConnection, DbCommand, testString))
                     {
-                        //var parameters = (IEnumerable)parameterCollection;
-                        dataList = DbConnection.QueryMultiple(sqlString, parameterCollection).Read(realType).ToList();
-                        is_success = true;
+                        try
+                        {
+                            //var parameters = (IEnumerable)parameterCollection;
+                            dataList = DbConnection.QueryMultiple(sqlString, parameterCollection).Read(realType).ToList();
+                            is_success = true;
+                        }
+                        catch (Exception exception)
+                        {
+                            is_success = false;
+                            ErrorMessage = exception.ToString();
+                        }
                     }
-                    catch (Exception exception)
-                    {
-                        is_success = false;
-                        ErrorMessage = exception.ToString();
-                    }
+
+                    CloseConnection();
                 }
-                CloseConnection();
                 return is_success;
             }
         }
@@ -210,21 +258,24 @@ namespace Ancestor.DataAccess.DBAction
                 DbCommand.BindByName = true;
                 if (_cmdFetchSize != null)
                     DbCommand.FetchSize = _cmdFetchSize.Value;
-                if (CheckConnection(DbConnection, DbCommand, testString))
+                using (var timeout = new TimeoutObject())
                 {
-                    try
+                    if (CheckConnection(DbConnection, DbCommand, testString))
                     {
-                        //var parameters = (IEnumerable)parameterCollection;
-                        dataList = DbConnection.QueryMultiple(sqlString, parameterCollection).Read<T>().ToList();
-                        is_success = true;
+                        try
+                        {
+                            //var parameters = (IEnumerable)parameterCollection;
+                            dataList = DbConnection.QueryMultiple(sqlString, parameterCollection).Read<T>().ToList();
+                            is_success = true;
+                        }
+                        catch (Exception exception)
+                        {
+                            is_success = false;
+                            ErrorMessage = exception.ToString();
+                        }
                     }
-                    catch (Exception exception)
-                    {
-                        is_success = false;
-                        ErrorMessage = exception.ToString();
-                    }
+                    CloseConnection();
                 }
-                CloseConnection();
                 return is_success;
             }
         }
@@ -243,35 +294,38 @@ namespace Ancestor.DataAccess.DBAction
                 DbCommand.InitialLOBFetchSize = InitialLobFetchSize;
                 if (_cmdFetchSize != null)
                     DbCommand.FetchSize = _cmdFetchSize.Value;
-                if (CheckConnection(DbConnection, DbCommand, testString))
+                using (var timeout = new TimeoutObject())
                 {
-                    // 2016-05-23 Commend.
-                    //if (DbTransaction == null)
-                    //{
-                    //    DbTransaction = DbConnection.BeginTransaction();
-                    //}
-                    //
-                    try
-                    {
-                        var parameters = (List<OracleParameter>)parameterCollection;
-                        DbCommand.Parameters.AddRange(parameters.ToArray());
-                        DbCommand.CommandText = sqlString;
-
-                        // 2015-09-01
-                        //DbCommand.ExecuteNonQuery();
-                        effectRows = DbCommand.ExecuteNonQuery();
-                        isSuccessful = true;
-                    }
-                    catch (Exception exception)
+                    if (CheckConnection(DbConnection, DbCommand, testString))
                     {
                         // 2016-05-23 Commend.
-                        //DbTransaction.Rollback();
-                        isSuccessful = false;
-                        ErrorMessage = exception.ToString();
+                        //if (DbTransaction == null)
+                        //{
+                        //    DbTransaction = DbConnection.BeginTransaction();
+                        //}
+                        //
+                        try
+                        {
+                            var parameters = (List<OracleParameter>)parameterCollection;
+                            DbCommand.Parameters.AddRange(parameters.ToArray());
+                            DbCommand.CommandText = sqlString;
+
+                            // 2015-09-01
+                            //DbCommand.ExecuteNonQuery();
+                            effectRows = DbCommand.ExecuteNonQuery();
+                            isSuccessful = true;
+                        }
+                        catch (Exception exception)
+                        {
+                            // 2016-05-23 Commend.
+                            //DbTransaction.Rollback();
+                            isSuccessful = false;
+                            ErrorMessage = exception.ToString();
+                        }
                     }
+                    // 2016-04-05 commend this line for transaction feature.
+                    CloseConnection();
                 }
-                // 2016-04-05 commend this line for transaction feature.
-                CloseConnection();
                 return isSuccessful;
             }
         }
@@ -291,156 +345,153 @@ namespace Ancestor.DataAccess.DBAction
                 DbCommand.InitialLOBFetchSize = InitialLobFetchSize;
                 if (_cmdFetchSize != null)
                     DbCommand.FetchSize = _cmdFetchSize.Value;
-                if (CheckConnection(DbConnection, DbCommand, testString))
+                using (var timeout = new TimeoutObject())
                 {
-                    try
+                    if (CheckConnection(DbConnection, DbCommand, testString))
                     {
-                        var parameters = (List<OracleParameter>)parameterCollection;
-                        DbCommand.Parameters.AddRange(parameters.ToArray());
-                        DbCommand.ExecuteNonQuery();
-                        is_success = true;
-
-                        var directionFilter = new ParameterDirection[] { ParameterDirection.Output, ParameterDirection.InputOutput, ParameterDirection.ReturnValue };
-                        foreach (OracleParameter OPara in DbCommand.Parameters)
+                        try
                         {
-                            if (directionFilter.Contains(OPara.Direction))
-                            {
-                                var parameter = dBParameter.FirstOrDefault(r => r.Name == OPara.ParameterName && r.ParameterDirection == OPara.Direction);
-                                if (parameter != null)
-                                {
-                                    if (OPara.OracleDbType == OracleDbType.RefCursor)
-                                    {
-                                        adapter = new OracleDataAdapter(DbCommand);
-                                        DataTable dt = new DataTable("Result");
-                                        adapter.Fill(dt, (OracleRefCursor)OPara.Value);
-                                        parameter.Value = dt;
-                                    }
-                                    else if (OPara.OracleDbType == OracleDbType.Clob)
-                                    {
-                                        var clob = (OracleClob)OPara.Value;
-                                        var reader = new StreamReader(clob, Encoding.Unicode);
-                                        char[] buffer = new char[parameter.Size];
-                                        int actual = 0;
+                            var parameters = (List<OracleParameter>)parameterCollection;
+                            DbCommand.Parameters.AddRange(parameters.ToArray());
+                            DbCommand.ExecuteNonQuery();
+                            is_success = true;
 
-                                        while ((actual = reader.Read(buffer, 0, buffer.Length)) > 0)
-                                            parameter.Value = new string(buffer, 0, actual);
+                            var directionFilter = new ParameterDirection[] { ParameterDirection.Output, ParameterDirection.InputOutput, ParameterDirection.ReturnValue };
+                            foreach (OracleParameter OPara in DbCommand.Parameters)
+                            {
+                                if (directionFilter.Contains(OPara.Direction))
+                                {
+                                    var parameter = dBParameter.FirstOrDefault(r => r.Name == OPara.ParameterName && r.ParameterDirection == OPara.Direction);
+                                    if (parameter != null)
+                                    {
+                                        if (OPara.OracleDbType == OracleDbType.RefCursor)
+                                        {
+                                            adapter = new OracleDataAdapter(DbCommand);
+                                            DataTable dt = new DataTable("Result");
+                                            adapter.Fill(dt, (OracleRefCursor)OPara.Value);
+                                            parameter.Value = dt;
+                                        }
+                                        else if (OPara.OracleDbType == OracleDbType.Clob)
+                                        {
+                                            var clob = (OracleClob)OPara.Value;
+                                            var reader = new StreamReader(clob, Encoding.Unicode);
+                                            char[] buffer = new char[parameter.Size];
+                                            int actual = 0;
+
+                                            while ((actual = reader.Read(buffer, 0, buffer.Length)) > 0)
+                                                parameter.Value = new string(buffer, 0, actual);
+                                        }
+                                        else
+                                            parameter.Value = OPara.Value;
                                     }
-                                    else
-                                        parameter.Value = OPara.Value;
                                 }
                             }
+
+                            //foreach (DBParameter Parameter in dBParameter)
+                            //{
+                            //    if (Parameter.ParameterDirection == ParameterDirection.Output)
+                            //    {
+                            //        foreach (OracleParameter OPara in DbCommand.Parameters)
+                            //        {
+                            //            if (OPara.Direction == ParameterDirection.Output && OPara.ParameterName == Parameter.Name)
+                            //            {
+                            //                if (OPara.OracleDbType == OracleDbType.RefCursor)
+                            //                {
+                            //                    adapter = new OracleDataAdapter(DbCommand);
+                            //                    DataTable dt = new DataTable("Result");
+                            //                    adapter.Fill(dt, (OracleRefCursor)OPara.Value);
+                            //                    Parameter.Value = dt;
+                            //                }
+                            //                else if (OPara.OracleDbType == OracleDbType.Clob)
+                            //                {
+                            //                    var clob = (OracleClob)OPara.Value;
+                            //                    var reader = new StreamReader(clob, Encoding.Unicode);
+                            //                    char[] buffer = new char[OPara.Size];
+                            //                    int actual = 0;
+                            //                    while ((actual = reader.Read(buffer, 0, buffer.Length)) > 0)
+                            //                        Parameter.Value = new string(buffer, 0, actual);
+                            //                }
+                            //                else
+                            //                    Parameter.Value = OPara.Value;
+                            //                break;
+
+
+                            //            }
+                            //        }
+                            //    }
+                            //    if (Parameter.ParameterDirection == ParameterDirection.InputOutput)
+                            //    {
+                            //        foreach (OracleParameter OPara in DbCommand.Parameters)
+                            //        {
+                            //            if (OPara.Direction == ParameterDirection.InputOutput)
+                            //            {
+                            //                if (OPara.ParameterName == Parameter.Name)
+                            //                {
+                            //                    if (OPara.OracleDbType == OracleDbType.RefCursor)
+                            //                    {
+                            //                        adapter = new OracleDataAdapter(DbCommand);
+                            //                        DataTable dt = new DataTable("Result");
+                            //                        adapter.Fill(dt, (OracleRefCursor)OPara.Value);
+                            //                        Parameter.Value = dt;
+                            //                    }
+                            //                    else if (OPara.OracleDbType == OracleDbType.Clob)
+                            //                    {
+                            //                        var clob = (OracleClob)OPara.Value;
+                            //                        var reader = new StreamReader(clob, Encoding.Unicode);
+                            //                        char[] buffer = new char[OPara.Size];
+                            //                        int actual = 0;
+                            //                        while ((actual = reader.Read(buffer, 0, buffer.Length)) > 0)
+                            //                            Parameter.Value = new string(buffer, 0, actual);
+                            //                    }
+                            //                    else
+                            //                        Parameter.Value = OPara.Value;
+                            //                }
+                            //            }
+                            //        }
+                            //    }
+                            //    if (Parameter.ParameterDirection == ParameterDirection.ReturnValue)
+                            //    {
+                            //        foreach (OracleParameter OPara in DbCommand.Parameters)
+                            //        {
+                            //            if (OPara.Direction == ParameterDirection.ReturnValue)
+                            //            {
+                            //                if (OPara.ParameterName == Parameter.Name)
+                            //                {
+                            //                    if (OPara.OracleDbType == OracleDbType.RefCursor)
+                            //                    {
+                            //                        adapter = new OracleDataAdapter(DbCommand);
+                            //                        DataTable dt = new DataTable("Result");
+                            //                        adapter.Fill(dt, (OracleRefCursor)OPara.Value);
+                            //                        Parameter.Value = dt;
+                            //                    }
+                            //                    else if (OPara.OracleDbType == OracleDbType.Clob)
+                            //                    {
+                            //                        var clob = (OracleClob)OPara.Value;
+                            //                        var reader = new StreamReader(clob, Encoding.Unicode);
+                            //                        char[] buffer = new char[OPara.Size];
+                            //                        int actual = 0;
+                            //                        while ((actual = reader.Read(buffer, 0, buffer.Length)) > 0)
+                            //                            Parameter.Value = new string(buffer, 0, actual);
+                            //                    }
+                            //                    else
+                            //                        Parameter.Value = OPara.Value;
+                            //                }
+                            //            }
+                            //        }
+                            //    }
+                            //}
                         }
-
-                        //foreach (DBParameter Parameter in dBParameter)
-                        //{
-                        //    if (Parameter.ParameterDirection == ParameterDirection.Output)
-                        //    {
-                        //        foreach (OracleParameter OPara in DbCommand.Parameters)
-                        //        {
-                        //            if (OPara.Direction == ParameterDirection.Output && OPara.ParameterName == Parameter.Name)
-                        //            {
-                        //                if (OPara.OracleDbType == OracleDbType.RefCursor)
-                        //                {
-                        //                    adapter = new OracleDataAdapter(DbCommand);
-                        //                    DataTable dt = new DataTable("Result");
-                        //                    adapter.Fill(dt, (OracleRefCursor)OPara.Value);
-                        //                    Parameter.Value = dt;
-                        //                }
-                        //                else if (OPara.OracleDbType == OracleDbType.Clob)
-                        //                {
-                        //                    var clob = (OracleClob)OPara.Value;
-                        //                    var reader = new StreamReader(clob, Encoding.Unicode);
-                        //                    char[] buffer = new char[OPara.Size];
-                        //                    int actual = 0;
-                        //                    while ((actual = reader.Read(buffer, 0, buffer.Length)) > 0)
-                        //                        Parameter.Value = new string(buffer, 0, actual);
-                        //                }
-                        //                else
-                        //                    Parameter.Value = OPara.Value;
-                        //                break;
-
-
-                        //            }
-                        //        }
-                        //    }
-                        //    if (Parameter.ParameterDirection == ParameterDirection.InputOutput)
-                        //    {
-                        //        foreach (OracleParameter OPara in DbCommand.Parameters)
-                        //        {
-                        //            if (OPara.Direction == ParameterDirection.InputOutput)
-                        //            {
-                        //                if (OPara.ParameterName == Parameter.Name)
-                        //                {
-                        //                    if (OPara.OracleDbType == OracleDbType.RefCursor)
-                        //                    {
-                        //                        adapter = new OracleDataAdapter(DbCommand);
-                        //                        DataTable dt = new DataTable("Result");
-                        //                        adapter.Fill(dt, (OracleRefCursor)OPara.Value);
-                        //                        Parameter.Value = dt;
-                        //                    }
-                        //                    else if (OPara.OracleDbType == OracleDbType.Clob)
-                        //                    {
-                        //                        var clob = (OracleClob)OPara.Value;
-                        //                        var reader = new StreamReader(clob, Encoding.Unicode);
-                        //                        char[] buffer = new char[OPara.Size];
-                        //                        int actual = 0;
-                        //                        while ((actual = reader.Read(buffer, 0, buffer.Length)) > 0)
-                        //                            Parameter.Value = new string(buffer, 0, actual);
-                        //                    }
-                        //                    else
-                        //                        Parameter.Value = OPara.Value;
-                        //                }
-                        //            }
-                        //        }
-                        //    }
-                        //    if (Parameter.ParameterDirection == ParameterDirection.ReturnValue)
-                        //    {
-                        //        foreach (OracleParameter OPara in DbCommand.Parameters)
-                        //        {
-                        //            if (OPara.Direction == ParameterDirection.ReturnValue)
-                        //            {
-                        //                if (OPara.ParameterName == Parameter.Name)
-                        //                {
-                        //                    if (OPara.OracleDbType == OracleDbType.RefCursor)
-                        //                    {
-                        //                        adapter = new OracleDataAdapter(DbCommand);
-                        //                        DataTable dt = new DataTable("Result");
-                        //                        adapter.Fill(dt, (OracleRefCursor)OPara.Value);
-                        //                        Parameter.Value = dt;
-                        //                    }
-                        //                    else if (OPara.OracleDbType == OracleDbType.Clob)
-                        //                    {
-                        //                        var clob = (OracleClob)OPara.Value;
-                        //                        var reader = new StreamReader(clob, Encoding.Unicode);
-                        //                        char[] buffer = new char[OPara.Size];
-                        //                        int actual = 0;
-                        //                        while ((actual = reader.Read(buffer, 0, buffer.Length)) > 0)
-                        //                            Parameter.Value = new string(buffer, 0, actual);
-                        //                    }
-                        //                    else
-                        //                        Parameter.Value = OPara.Value;
-                        //                }
-                        //            }
-                        //        }
-                        //    }
-                        //}
+                        catch (Exception exception)
+                        {
+                            is_success = false;
+                            ErrorMessage = exception.ToString();
+                        }
                     }
-                    catch (Exception exception)
-                    {
-                        is_success = false;
-                        ErrorMessage = exception.ToString();
-                    }
+                    CloseConnection();
                 }
-                CloseConnection();
                 return is_success;
             }
         }
-
-        private void GetOutputValue()
-        {
-
-        }
-
         // 2016-04-05 Add feature for transaction.
         protected override void DbCommit()
         {

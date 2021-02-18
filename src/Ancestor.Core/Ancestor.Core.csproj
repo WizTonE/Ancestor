@@ -41,6 +41,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -52,6 +53,7 @@
     <Compile Include="..\AssemblyVersion.cs">
       <Link>Properties\AssemblyVersion.cs</Link>
     </Compile>
+    <Compile Include="AncestorGlobalOptions.cs" />
     <Compile Include="AncestorResult.cs" />
     <Compile Include="Attributes\ConnectionStringAttribute.cs" />
     <Compile Include="Attributes\HardWordAttribute.cs" />
