@@ -47,12 +47,9 @@ namespace Ancestor.DataAccess.Connections
             else
                 ConnectionString = @"Data Source = " + dataSource + "; ";
 
-            if(dbObject.IsLazyPassword)
+            if (dbObject.IsLazyPassword ?? AncestorGlobalOptions.GlobalLazyPassword)
             {
-                if (dbObject.LazyPasswordSecretKey != null)
-                    dbObject.Password = LazyPassword.GetPassword(new OracleConnection(), dbObject.ID, dbObject.LazyPasswordSecretKey, dbObject.LazyPasswordSecretKeyNode);
-                else
-                    dbObject.Password = LazyPassword.GetPasswordBySchema(new OracleConnection(), dbObject.ID, dbObject.LazyPasswordSecretKeyNode);
+                dbObject.Password = LazyPassword.GetPassword(new OracleConnection(), dbObject.ID, dbObject.LazyPasswordSecretKey, dbObject.LazyPasswordSecretKeyNode);
             }
 
             //ConnectionString += "User Id=" + dbObject.ID + ";Password=" + dbObject.Password + ";Pooling=true";
@@ -60,7 +57,7 @@ namespace Ancestor.DataAccess.Connections
             {
                 "User Id=" + dbObject.ID,
                 "Password=" + dbObject.Password,
-            };            
+            };
             dbObject.ConnectionString = dbObject.ConnectionString ?? new OracleConnectionString();
 
             var properties = dbObject.ConnectionString.GetType().GetProperties();
@@ -72,7 +69,7 @@ namespace Ancestor.DataAccess.Connections
                 {
                     connectionStrings.Add(string.Format("{0}={1}", property.Name.Replace("_", " "), value));
                 }
-                else if(defaultValue != null)
+                else if (defaultValue != null)
                 {
                     connectionStrings.Add(string.Format("{0}={1}", property.Name.Replace("_", " "), ((DefaultAttribute)defaultValue).Value));
                 }

@@ -48,7 +48,7 @@ namespace Ancestor.Core
         public Mode ConnectedMode { get; set; }
         //public int? IncreasePoolSize { get; set; }
         public IConnectionString ConnectionString { get; set; }
-        public bool IsLazyPassword { get; set; }
+        public bool? IsLazyPassword { get; set; }
         public string LazyPasswordSecretKey { get; set; }
         public string LazyPasswordSecretKeyNode { get; set; }
     }
