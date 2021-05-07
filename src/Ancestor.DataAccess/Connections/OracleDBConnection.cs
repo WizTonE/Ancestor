@@ -28,7 +28,6 @@ namespace Ancestor.DataAccess.Connections
             DBConnection = new OracleConnection();
             this.SetConnectionObject(dbObject);
         }
-
         /// <summary>
         /// 設定連線
         /// 1. DBObject.Mode.Direct為直接連線, 直接連線至ping的到的資料庫位置
@@ -40,10 +39,10 @@ namespace Ancestor.DataAccess.Connections
             dBObject = dbObject;
             // 2015-09-02 Renew data source.
             var dataSource = dbObject.IP == null ? dbObject.Node : dbObject.IP;
-
+            var servicePrefix = dbObject.ServicePrefix ?? "SERVICE_NAME";
             if (dbObject.ConnectedMode == DBObject.Mode.Direct)
                 ConnectionString = @"Data Source=(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)"
-                        + "(HOST=" + dataSource + ")(PORT=1521)))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=" + dbObject.Node + ")));";
+                        + "(HOST=" + dataSource + ")(PORT=1521)))(CONNECT_DATA=(SERVER=DEDICATED)(" + servicePrefix + "=" + dbObject.Node + ")));";
             else
                 ConnectionString = @"Data Source = " + dataSource + "; ";
 

@@ -21,6 +21,9 @@ namespace Ancestor.DataAccess.DAO
     /// </summary>
     public abstract class BaseAbstractDao : DataAccessObject, IDataAccessObject
     {
+
+
+
         #region virtual funtion
 
         #region Function: Create
@@ -351,11 +354,11 @@ namespace Ancestor.DataAccess.DAO
         }
         protected virtual IDbTransaction BeginTransaction()
         {
-            return DB.BeginTransaction();
+            return new AncestorTransaction(this, DB.BeginTransaction());
         }
         protected virtual IDbTransaction BeginTransaction(IsolationLevel isoLationLevel)
         {
-            return DB.BeginTransaction(isoLationLevel);
+            return new AncestorTransaction(this, DB.BeginTransaction(isoLationLevel));
         }
         protected virtual void Commit()
         {
@@ -365,13 +368,22 @@ namespace Ancestor.DataAccess.DAO
         {
             DB.DbRollBack();
         }
-        #endregion 
+        #endregion
 
         #endregion
 
         #region Interface Implement
-        IDbConnection IDataAccessObject.DBConnection => DB.GetConnectionFactory();
 
+
+        IDbConnection IDataAccessObject.DBConnection
+        {
+            get { return DB.GetConnectionFactory(); }
+        }
+
+        bool IDataAccessObject.IsTransacting
+        {
+            get { return DB.IsTransacting; }
+        }
 
 
         IDbTransaction IDataAccessObject.BeginTransaction()
@@ -407,7 +419,7 @@ namespace Ancestor.DataAccess.DAO
             return Delete<T>(predicate);
         }
 
-       
+
         AncestorResult IDataAccessObject.ExecuteNonQuery(string sqlString, object modelObject)
         {
             return ExecuteNonQuery(sqlString, modelObject);

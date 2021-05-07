@@ -75,6 +75,7 @@
     <Compile Include="Connections\ManagedOracleDBConnection.cs" />
     <Compile Include="DAO\OleDao.cs" />
     <Compile Include="DAO\ManagedOracleDao.cs" />
+    <Compile Include="DBAction\AncestorTransaction.cs" />
     <Compile Include="DBAction\OleAction.cs" />
     <Compile Include="DBAction\ManagedOracleAction.cs" />
     <Compile Include="Interface\IConnection.cs" />

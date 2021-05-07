@@ -21,6 +21,9 @@ namespace Ancestor.DataAccess.DAO
     {
         DBObject DbObject { get; }
         IDbAction GetActionFactory();
+
+        bool IsTransacting { get; }
+
         #region Function: Query
         #region :Sql string
         AncestorResult Query(string sqlString, object paramsObjects);

@@ -28,6 +28,5 @@ namespace Ancestor.Core
         public bool? Statement_Cache_Purge { get; set; }
         public int? Statement_Cache_Size { get; set; }
         public bool? Validate_Connection { get; set; }
-
     }
 }
