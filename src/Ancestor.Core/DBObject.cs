@@ -41,12 +41,18 @@ namespace Ancestor.Core
         //資料庫密碼
         public string Password { get; set; }
         //資料庫通訊埠
-        public string Port { get; set; }
+        public string Port { get; set; }     
+        public string ServicePrefix { get; set; }
         //資料庫型態
         public DataBase DataBaseType { get; set; }
         //資料庫連線方式
         public Mode ConnectedMode { get; set; }
         //public int? IncreasePoolSize { get; set; }
         public IConnectionString ConnectionString { get; set; }
+        public bool? IsLazyPassword { get; set; }
+        public string LazyPasswordSecretKey { get; set; }
+        public string LazyPasswordSecretKeyNode { get; set; }         
+        public string LazyPasswordDataSource { get; set; }
+        public string LazyPasswordConnectionString { get; set; }
     }
 }

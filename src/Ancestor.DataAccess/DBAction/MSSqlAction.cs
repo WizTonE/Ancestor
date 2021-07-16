@@ -56,7 +56,7 @@ namespace Ancestor.DataAccess.DBAction
                 return _sqlDbTypeDic;
             }
         }
-        SqlTransaction DbTransaction;
+        //SqlTransaction DbTransaction;
         SqlConnection DbConnection
         {
             get { return DBConnection as SqlConnection; }

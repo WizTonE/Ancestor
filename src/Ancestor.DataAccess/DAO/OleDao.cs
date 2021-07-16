@@ -84,26 +84,17 @@ namespace Ancestor.DataAccess.DAO
             }
             return _OleDbTypeDic;
         }
+        private OleDbParameter CreateOleDbParameter(string name, Type type, object value = null, ParameterDirection direction = ParameterDirection.Input)
+        {
+            var typeName = type == null ? "string" : type.Name;
+            return CreateOleDbParameter(name, typeName, value, direction);
+        }
         private OleDbParameter CreateOleDbParameter(string name, string typeName, object value = null, ParameterDirection direction = ParameterDirection.Input)
         {
             var p = new OleDbParameter(DbSymbolize + name, (OleDbType)GetDbType(typeName));
             p.Value = value;
             p.Direction = direction;
             return p;
-        }
-        // 2018-11-05 Add Dispose function for OleDao.
-        public override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                DbSymbolize = string.Empty;
-                DbLikeSymbolize = string.Empty;
-            }
-            DB = null;
-        }
-        ~OleDao()
-        {
-            Dispose(false);
         }
         private string GenerateSelectString(object select_obj, bool withRowId = false)
         {
@@ -347,7 +338,7 @@ namespace Ancestor.DataAccess.DAO
             var dataTable = new DataTable();
             var dataList = new List<object>();
             var SqlString = new StringBuilder();
-            var mapping = new Dictionary<Type, Type> {
+            var mapping = new Dictionary<Type, object> {
                 { typeof(FakeType), realType }
             };
             using (LambdaExpressionHelper helper = new LambdaExpressionHelper(DbSymbolize, DbLikeSymbolize, mapping) { HardwordFlag = false })
@@ -544,10 +535,10 @@ namespace Ancestor.DataAccess.DAO
                     if (paramsObjects is System.Collections.IDictionary && type.IsGenericType && type.GetGenericTypeDefinition().IsAssignableFrom(typeof(Dictionary<,>)))
                     {
                         var dic = paramsObjects as System.Collections.IDictionary;
-                        paras = dic.Keys.Cast<string>().Select(r => CreateOleDbParameter(r, r == null ? "string" : dic[r].GetType().Name, dic[r], ParameterDirection.Input));
+                        paras = dic.Keys.Cast<string>().Select(r => CreateOleDbParameter(r, r == null ? null : dic[r].GetType(), dic[r], ParameterDirection.Input));
                     }
                     else
-                        paras = paramsObjects.GetType().GetProperties().Select(prop => CreateOleDbParameter(prop.Name, prop.PropertyType.Name, prop.GetValue(paramsObjects, null), ParameterDirection.Input));
+                        paras = paramsObjects.GetType().GetProperties().Select(prop => CreateOleDbParameter(prop.Name, prop.PropertyType, prop.GetValue(paramsObjects, null), ParameterDirection.Input));
 
                     if (paras.Count() > 0)
                         parameters.AddRange(paras);
@@ -716,9 +707,9 @@ namespace Ancestor.DataAccess.DAO
                                 prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
                             propertyType = prop.PropertyType.GetGenericArguments()[0];
                         if (prop.Name.ToUpper() == "ROWID")
-                            parameters.Add(CreateOleDbParameter(DbSymbolize + prop.Name.ToUpper() + "1", propertyType.Name, prop.GetValue(modelObject, null).ToString().Length > 0 ? prop.GetValue(modelObject, null) : DBNull.Value, ParameterDirection.Input));
+                            parameters.Add(CreateOleDbParameter(DbSymbolize + prop.Name.ToUpper() + "1", propertyType, prop.GetValue(modelObject, null).ToString().Length > 0 ? prop.GetValue(modelObject, null) : DBNull.Value, ParameterDirection.Input));
                         else
-                            parameters.Add(CreateOleDbParameter(DbSymbolize + prop.Name.ToUpper(), propertyType.Name, prop.GetValue(modelObject, null).ToString().Length > 0 ? prop.GetValue(modelObject, null) : DBNull.Value, ParameterDirection.Input));
+                            parameters.Add(CreateOleDbParameter(DbSymbolize + prop.Name.ToUpper(), propertyType, prop.GetValue(modelObject, null).ToString().Length > 0 ? prop.GetValue(modelObject, null) : DBNull.Value, ParameterDirection.Input));
                     }
                 }
             }
@@ -836,7 +827,7 @@ namespace Ancestor.DataAccess.DAO
                         SqlString.Append(parameterName + " = :" + parameterName);
                     }
                     parameters.Add(
-                            CreateOleDbParameter(DbSymbolize + parameterName, propertyType.Name, prop.GetValue(objectModel, null), ParameterDirection.Input)
+                            CreateOleDbParameter(DbSymbolize + parameterName, propertyType, prop.GetValue(objectModel, null), ParameterDirection.Input)
                             );
                     SqlString.Append(" and ");
                 }
@@ -870,88 +861,78 @@ namespace Ancestor.DataAccess.DAO
             returnResult.IsSuccess = isSuccess;
             return returnResult;
         }
-        protected override AncestorResult Query<T>(Expression<Func<T, bool>> predicate, Expression<Func<T, object>> selectCondition)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { typeof(T) });
-        }
-        protected override AncestorResult Query<FakeType>(Expression<Func<FakeType, bool>> predicate, Expression<Func<FakeType, object>> selectCondition, Type realType)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { realType }, new Type[] { typeof(FakeType) });
-        }
-
-        protected override AncestorResult Query<T1, T2>(Expression<Func<T1, T2, bool>> predicate, Expression<Func<T1, T2, object>> selectCondition)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { typeof(T1), typeof(T2) });
-        }
-        protected override AncestorResult Query<FakeType1, FakeType2>(Expression<Func<FakeType1, FakeType2, bool>> predicate, Expression<Func<FakeType1, FakeType2, object>> selectCondition, Type realType1, Type realType2 = null)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { realType1, realType2 ?? typeof(FakeType2) }, new Type[] { typeof(FakeType1), typeof(FakeType2) });
-        }
-
-        protected override AncestorResult Query<T1, T2, T3>(Expression<Func<T1, T2, T3, bool>> predicate, Expression<Func<T1, T2, T3, object>> selectCondition)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { typeof(T1), typeof(T2), typeof(T3) });
-        }
-
-        protected override AncestorResult Query<FakeType1, FakeType2, FakeType3>(Expression<Func<FakeType1, FakeType2, FakeType3, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, object>> selectCondition, Type realType1, Type realType2 = null, Type realType3 = null)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { realType1, realType2 ?? typeof(FakeType2), realType3 ?? typeof(FakeType3) }, new Type[] { typeof(FakeType1), typeof(FakeType2), typeof(FakeType3) });
-        }
-
-        protected override AncestorResult Query<T1, T2, T3, T4>(Expression<Func<T1, T2, T3, T4, bool>> predicate, Expression<Func<T1, T2, T3, T4, object>> selectCondition)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { typeof(T1), typeof(T2), typeof(T3), typeof(T4) });
-        }
-        protected override AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4>(Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, object>> selectCondition, Type realType1, Type realType2 = null, Type realType3 = null, Type realType4 = null)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { realType1, realType2 ?? typeof(FakeType2), realType3 ?? typeof(FakeType3), realType4 ?? typeof(FakeType4) }, new Type[] { typeof(FakeType1), typeof(FakeType2), typeof(FakeType3), typeof(FakeType4) });
-        }
-
-        protected override AncestorResult Query<T1, T2, T3, T4, T5>(Expression<Func<T1, T2, T3, T4, T5, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, object>> selectCondition)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5) });
-        }
-
-        protected override AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5>(Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, object>> selectCondition, Type realType1, Type realType2 = null, Type realType3 = null, Type realType4 = null, Type realType5 = null)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { realType1, realType2 ?? typeof(FakeType2), realType3 ?? typeof(FakeType3), realType4 ?? typeof(FakeType4), realType5 ?? typeof(FakeType5) }, new Type[] { typeof(FakeType1), typeof(FakeType2), typeof(FakeType3), typeof(FakeType4), typeof(FakeType5), });
-        }
-
-        protected override AncestorResult Query<T1, T2, T3, T4, T5, T6>(Expression<Func<T1, T2, T3, T4, T5, T6, bool>> predicate, Expression<Func<T1, T2, T3, T4, T5, T6, object>> selectCondition)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { typeof(T1), typeof(T2), typeof(T3), typeof(T4), typeof(T5), typeof(T6) });
-        }
-
-        protected override AncestorResult Query<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6>(Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, bool>> predicate, Expression<Func<FakeType1, FakeType2, FakeType3, FakeType4, FakeType5, FakeType6, object>> selectCondition, Type realType1, Type realType2 = null, Type realType3 = null, Type realType4 = null, Type realType5 = null, Type realType6 = null)
-        {
-            return QueryWithJoinCondition(predicate.Body, selectCondition.Body, new Type[] { realType1, realType2 ?? typeof(FakeType2), realType3 ?? typeof(FakeType3), realType4 ?? typeof(FakeType4), realType5 ?? typeof(FakeType5), realType6 ?? typeof(FakeType6) }, new Type[] { typeof(FakeType1), typeof(FakeType2), typeof(FakeType3), typeof(FakeType4), typeof(FakeType5), typeof(FakeType6) });
-        }
-
-        private AncestorResult QueryWithJoinCondition(Expression predicate, Expression selectCondition, Type[] queryTypes, Type[] fakeTypes = null)
+        protected override AncestorResult QueryWithJoinCondition(Expression predicate, Expression selectCondition, Type[] types, Type[] fakeTypes = null)
         {
             string whereString = string.Empty;
             var isSuccess = false;
             var sqlString = string.Empty;
-            var returnResult = new AncestorResult() { HardwordFlag = false };
+            var returnResult = new AncestorResult();
             var parameters = new List<OleDbParameter>();
             var dataTable = new DataTable();
             var SqlString = new StringBuilder();
-            Dictionary<Type, Type> mapping = null;
-            if (fakeTypes != null && queryTypes.Length == fakeTypes.Length)
+            Dictionary<Type, object> mapping = null;
+            if (fakeTypes != null && fakeTypes.Length == types.Length)
             {
-                mapping = new Dictionary<Type, Type>();
-                for (int i = 0; i < queryTypes.Length; i++)
-                    if (fakeTypes[i] != queryTypes[i])
-                        mapping.Add(fakeTypes[i], queryTypes[i]);
+                mapping = new Dictionary<Type, object>();
+                for (int i = 0; i < types.Length; i++)
+                    if (!string.Equals(fakeTypes[i].Name, types[i].Name, StringComparison.OrdinalIgnoreCase))
+                        mapping.Add(fakeTypes[i], types[i]);
             }
-            using (LambdaExpressionHelper helper = new LambdaExpressionHelper(DbSymbolize, DbLikeSymbolize, mapping) { HardwordFlag = false })
+            using (LambdaExpressionHelper helper = new LambdaExpressionHelper(DbSymbolize, DbLikeSymbolize, mapping))
             {
                 try
                 {
                     var rootExp = predicate;
                     whereString = helper.Translate(rootExp);
                     var Parameters = helper.Parameters;
-                    var tableName = string.Join(", ", from type in queryTypes select type.Name);
+                    var tableName = string.Join(", ", from type in types select type.Name);
+                    SqlString.Append("SELECT " + helper.SelectString(selectCondition) + " FROM " + tableName);
+                    SqlString.Append(whereString);
+
+                    var paras = from parameter in Parameters
+                                select CreateOleDbParameter(parameter.Name, parameter.Type,
+                              parameter.Value, ParameterDirection.Input);
+                    parameters.AddRange(paras);
+
+                    isSuccess = DB.Query(SqlString.ToString(), parameters, ref dataTable);
+                    returnResult.Message = DB.ErrorMessage;
+                    returnResult.ReturnDataTable = dataTable;
+                }
+                catch (Exception exception)
+                {
+                    returnResult.Message = exception.ToString();
+                    isSuccess = false;
+                }
+            }
+            returnResult.IsSuccess = isSuccess;
+
+            return returnResult;
+        }
+        protected override AncestorResult QueryWithJoinCondition(Expression predicate, Expression selectCondition, string[] names, Type[] fakeTypes = null)
+        {
+            string whereString = string.Empty;
+            var isSuccess = false;
+            var sqlString = string.Empty;
+            var returnResult = new AncestorResult();
+            var parameters = new List<OleDbParameter>();
+            var dataTable = new DataTable();
+            var SqlString = new StringBuilder();
+            Dictionary<Type, object> mapping = null;
+            if (fakeTypes != null && fakeTypes.Length == names.Length)
+            {
+                mapping = new Dictionary<Type, object>();
+                for (int i = 0; i < names.Length; i++)
+                    if (!string.Equals(fakeTypes[i].Name, names[i], StringComparison.OrdinalIgnoreCase))
+                        mapping.Add(fakeTypes[i], names[i]);
+            }
+            using (LambdaExpressionHelper helper = new LambdaExpressionHelper(DbSymbolize, DbLikeSymbolize, mapping))
+            {
+                try
+                {
+                    var rootExp = predicate;
+                    whereString = helper.Translate(rootExp);
+                    var Parameters = helper.Parameters;
+                    var tableName = string.Join(", ", from name in names select name);
                     SqlString.Append("SELECT " + helper.SelectString(selectCondition) + " FROM " + tableName);
                     SqlString.Append(whereString);
 

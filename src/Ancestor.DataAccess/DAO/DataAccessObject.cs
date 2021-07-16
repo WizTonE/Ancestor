@@ -16,7 +16,8 @@ namespace Ancestor.DataAccess.DAO
         //public StringBuilder SqlString { get; set; }
         internal string DbSymbolize { get; set; }
         internal string DbLikeSymbolize { get; set; }
-
+        private bool _disposed = false;
+        private object _lastDbParameters;
         /// <summary>DBCommand語法(Debug Only)</summary>
         internal string DBCommand
         {
@@ -25,40 +26,58 @@ namespace Ancestor.DataAccess.DAO
                 return DB?.DbCommandString;
             }
         }
+        [Obsolete("will be delete")]
+        internal object DBParameters
+        {
+            get { return _lastDbParameters; }
+        }
+
         public bool IsTransacting
         {
             get
             {
-                return DB?.IsTransacting ?? false; 
+                return DB?.IsTransacting ?? false;
             }
         }
-            
+
 
         internal virtual object GetDbType(string typeString)
         {
             return null;
         }
-        // 2016-02-08 Add Dispose function for OracleDao.
-        public void Dispose()
+        internal virtual object GetDbTypeFromType(Type type)
         {
-            try
-            {
-                this.Dispose(true);
-            }
-            // This object will be cleaned up by the Dispose method.
-            // Therefore, you should call GC.SupressFinalize to
-            // take this object off the finalization queue
-            // and prevent finalization code for this object
-            // from executing a second time.
-            finally
-            {
-                GC.SuppressFinalize(this);
-            }
+            if (type != null && type.IsGenericType && typeof(Nullable<>).IsAssignableFrom(type.GetGenericTypeDefinition()))
+                type = type.GetGenericArguments()[0];
+            var typeName = type == null ? "" : type.Name;
+            return GetDbType(typeName);
         }
-        public abstract void Dispose(bool disposing);
         ~DataAccessObject()
         {
             Dispose(false);
+        }
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!_disposed)
+            {
+                if (disposing)
+                    Disposing();
+                _disposed = true;
+            }
+        }
+
+        protected virtual void Disposing()
+        {
+            if (DB != null)
+            {
+                DB.Dispose();
+                DB = null;
+            }
         }
     }
 }

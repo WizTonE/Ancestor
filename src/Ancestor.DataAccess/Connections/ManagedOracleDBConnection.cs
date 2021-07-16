@@ -40,13 +40,17 @@ namespace Ancestor.DataAccess.Connections
             dBObject = dbObject;
             // 2015-09-02 Renew data source.
             var dataSource = dbObject.IP == null ? dbObject.Node : dbObject.IP;
-
+            var servicePrefix = dbObject.ServicePrefix ?? "SERVICE_NAME";
             if (dbObject.ConnectedMode == DBObject.Mode.Direct)
                 ConnectionString = @"Data Source=(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)"
-                        + "(HOST=" + dataSource + ")(PORT=1521)))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=" + dbObject.Node + ")));";
+                        + "(HOST=" + dataSource + ")(PORT=1521)))(CONNECT_DATA=(SERVER=DEDICATED)("+ servicePrefix + "=" + dbObject.Node + ")));";
             else
                 ConnectionString = @"Data Source = " + dataSource + "; ";
 
+            if (dbObject.IsLazyPassword ?? AncestorGlobalOptions.GlobalLazyPassword)
+            {
+                dbObject.Password = LazyPassword.GetPassword(new OracleConnection(), dbObject.ID, dbObject.LazyPasswordSecretKey, dbObject.LazyPasswordSecretKeyNode);
+            }
             //ConnectionString += "User Id=" + dbObject.ID + ";Password=" + dbObject.Password + ";Pooling=true";
             var connectionStrings = new List<string>
             {
@@ -65,7 +69,7 @@ namespace Ancestor.DataAccess.Connections
                 {
                     connectionStrings.Add(string.Format("{0}={1}", property.Name.Replace("_", " "), value));
                 }
-                else if(defaultValue != null)
+                else if (defaultValue != null)
                 {
                     connectionStrings.Add(string.Format("{0}={1}", property.Name.Replace("_", " "), ((DefaultAttribute)defaultValue).Value));
                 }

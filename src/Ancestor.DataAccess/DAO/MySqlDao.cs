@@ -140,7 +140,7 @@ namespace Ancestor.DataAccess.DAO
                         if (prop.PropertyType.IsGenericType &&
                                 prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
                             propertyType = prop.PropertyType.GetGenericArguments()[0];
-                        var parameter = new MySqlParameter(DbSymbolize + prop.Name.ToUpper(), (MySqlDbType)GetDbType(propertyType.Name));
+                        var parameter = new MySqlParameter(DbSymbolize + prop.Name.ToUpper(), (MySqlDbType)GetDbTypeFromType(propertyType));
                         parameter.Value = prop.GetValue(modelObject, null);
                         parameter.Direction = ParameterDirection.Input;
                         parameters.Add(parameter);
@@ -256,7 +256,7 @@ namespace Ancestor.DataAccess.DAO
                         if (prop.PropertyType.IsGenericType &&
                                 prop.PropertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
                             propertyType = prop.PropertyType.GetGenericArguments()[0];
-                        var parameter = new MySqlParameter(DbSymbolize + prop.Name.ToUpper(), (MySqlDbType)GetDbType(propertyType.Name));
+                        var parameter = new MySqlParameter(DbSymbolize + prop.Name.ToUpper(), (MySqlDbType)GetDbTypeFromType(propertyType));
                         parameter.Value = prop.GetValue(objectModel, null);
                         parameter.Direction = ParameterDirection.Input;
                         parameters.Add(parameter);
@@ -383,7 +383,7 @@ namespace Ancestor.DataAccess.DAO
                     var type = paramsObjects.GetType();
                     if (paramsObjects is System.Collections.IDictionary && type.IsGenericType && type.GetGenericTypeDefinition().IsAssignableFrom(typeof(Dictionary<,>)))
                         paras = from dynamic kv in (paramsObjects as System.Collections.IDictionary)
-                                select new MySqlParameter(DbSymbolize + kv.Key, (MySqlDbType)GetDbType(kv.Value == null ? "string" : kv.Value.GetType().Name))
+                                select new MySqlParameter(DbSymbolize + kv.Key, (MySqlDbType)GetDbTypeFromType(kv.Value == null ? null : kv.Value.GetType()))
                                 {
                                    Value = kv.Value,
                                    Direction = ParameterDirection.Input
@@ -391,7 +391,7 @@ namespace Ancestor.DataAccess.DAO
                     else
                         paras = paramsObjects.GetType().GetProperties().Select(x =>
                         {
-                            var parameter = new MySqlParameter(DbSymbolize + x.Name, (MySqlDbType)GetDbType(x.PropertyType.Name));
+                            var parameter = new MySqlParameter(DbSymbolize + x.Name, (MySqlDbType)GetDbTypeFromType(x.PropertyType));
                             parameter.Value = x.GetValue(paramsObjects, null);
                             parameter.Direction = ParameterDirection.Input;
                             return parameter;
@@ -440,7 +440,7 @@ namespace Ancestor.DataAccess.DAO
 
                     var paras = Parameters.Select(x =>
                     {
-                        var parameter = new MySqlParameter(x.Name, (MySqlDbType)GetDbType(x.Value.GetType().Name));
+                        var parameter = new MySqlParameter(x.Name, (MySqlDbType)GetDbTypeFromType(x.Value.GetType()));
                         parameter.Value = x.Value;
                         parameter.Direction = ParameterDirection.Input;
                         return parameter;
@@ -553,7 +553,7 @@ namespace Ancestor.DataAccess.DAO
 
                     var paras = Parameters.Select(x =>
                     {
-                        var parameter = new MySqlParameter(x.Name, (MySqlDbType)GetDbType(x.Value.GetType().Name));
+                        var parameter = new MySqlParameter(x.Name, (MySqlDbType)GetDbTypeFromType(x.Value.GetType()));
                         parameter.Value = x.Value;
                         parameter.Direction = ParameterDirection.Input;
                         return parameter;
@@ -743,7 +743,7 @@ namespace Ancestor.DataAccess.DAO
 
                     sqlConditionWhere.Append(parameterName + " = " + DbSymbolize + parameterName);
 
-                    var parameter = new MySqlParameter(DbSymbolize + prop.Name.ToUpper(), (MySqlDbType)GetDbType(propertyType.Name));
+                    var parameter = new MySqlParameter(DbSymbolize + prop.Name.ToUpper(), (MySqlDbType)GetDbTypeFromType(propertyType));
                     parameter.Value = prop.GetValue(objectModel, null);
                     parameter.Direction = ParameterDirection.Input;
                     parameters.Add(parameter);
@@ -850,7 +850,7 @@ namespace Ancestor.DataAccess.DAO
 
                 //如果obj value非null但長度為0, 代表需為NULL, 以DBnull.Value傳值
                 //parameters.Add(new MySqlParameter(DbSymbolize + prop.Name.ToUpper(), (MySqlDbType)GetDbType(propertyType.Name), prop.GetValue(valueObject, null).ToString().Length > 0 ? prop.GetValue(valueObject, null) : DBNull.Value, ParameterDirection.Input));
-                var parameter = new MySqlParameter(DbSymbolize + prop.Name.ToUpper(), (MySqlDbType)GetDbType(prop.PropertyType.Name))
+                var parameter = new MySqlParameter(DbSymbolize + prop.Name.ToUpper(), (MySqlDbType)GetDbTypeFromType(prop.PropertyType))
                 {
                     Value = prop.GetValue(valueObject, null)?.ToString() != null ? prop.GetValue(valueObject, null) : DBNull.Value,
                     Direction = ParameterDirection.Input
@@ -859,25 +859,6 @@ namespace Ancestor.DataAccess.DAO
             }
         }
 
-        public override void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                // Release or Dispose managed resources.
-                // Free other state (managed objects).
-                DbSymbolize = string.Empty;
-                DbLikeSymbolize = string.Empty;
-            }
-            // Set large fields to null.
-            // Call Dispose on your base class.
-            // Free your own state (unmanaged objects).
-            DB = null;
-        }
-
-        ~MySqlDao()
-        {
-            Dispose(false);
-        }
 
         protected override AncestorResult UpdateAll(IModel valueObject, IModel whereObject)
         {

@@ -28,7 +28,6 @@ namespace Ancestor.DataAccess.Connections
             DBConnection = new OracleConnection();
             this.SetConnectionObject(dbObject);
         }
-
         /// <summary>
         /// 設定連線
         /// 1. DBObject.Mode.Direct為直接連線, 直接連線至ping的到的資料庫位置
@@ -40,12 +39,17 @@ namespace Ancestor.DataAccess.Connections
             dBObject = dbObject;
             // 2015-09-02 Renew data source.
             var dataSource = dbObject.IP == null ? dbObject.Node : dbObject.IP;
-
+            var servicePrefix = dbObject.ServicePrefix ?? "SID";
             if (dbObject.ConnectedMode == DBObject.Mode.Direct)
                 ConnectionString = @"Data Source=(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)"
-                        + "(HOST=" + dataSource + ")(PORT=1521)))(CONNECT_DATA=(SERVER=DEDICATED)(SERVICE_NAME=" + dbObject.Node + ")));";
+                        + "(HOST=" + dataSource + ")(PORT=1521)))(CONNECT_DATA=(SERVER=DEDICATED)(" + servicePrefix + "=" + dbObject.Node + ")));";
             else
                 ConnectionString = @"Data Source = " + dataSource + "; ";
+
+            if (dbObject.IsLazyPassword ?? AncestorGlobalOptions.GlobalLazyPassword)
+            {
+                dbObject.Password = LazyPassword.GetPassword(new OracleConnection(), dbObject);
+            }
 
             //ConnectionString += "User Id=" + dbObject.ID + ";Password=" + dbObject.Password + ";Pooling=true";
             var connectionStrings = new List<string>
@@ -53,7 +57,6 @@ namespace Ancestor.DataAccess.Connections
                 "User Id=" + dbObject.ID,
                 "Password=" + dbObject.Password,
             };
-
             dbObject.ConnectionString = dbObject.ConnectionString ?? new OracleConnectionString();
 
             var properties = dbObject.ConnectionString.GetType().GetProperties();
@@ -65,7 +68,7 @@ namespace Ancestor.DataAccess.Connections
                 {
                     connectionStrings.Add(string.Format("{0}={1}", property.Name.Replace("_", " "), value));
                 }
-                else if(defaultValue != null)
+                else if (defaultValue != null)
                 {
                     connectionStrings.Add(string.Format("{0}={1}", property.Name.Replace("_", " "), ((DefaultAttribute)defaultValue).Value));
                 }

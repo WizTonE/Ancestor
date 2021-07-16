@@ -21,7 +21,7 @@ namespace Ancestor.DataAccess.Interface
     /// 2017/06/15 新增DbCommand
     /// 2017/06/16 新增IsTransacting
     /// </summary>
-    public interface IDbAction
+    public interface IDbAction : IDisposable
     {
         string ErrorMessage { get; set; }
         IDbConnection DBConnection { get; }

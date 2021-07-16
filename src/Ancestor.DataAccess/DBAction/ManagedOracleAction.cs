@@ -30,7 +30,28 @@ namespace Ancestor.DataAccess.DBAction
     /// 2016/09-14 Andycow0  Added IDbConnection for returning Connection of DB.
     /// </summary>
     public class ManagedOracleAction : BaseAbstractAction
-    {       
+    {
+        #region Settings
+        private delegate bool TryParseDelegate<T>(string text, out T value);
+        private static int? _cmdFetchSize;
+        private static int? _cmdInitialLongFetchSize;
+        private static int? _cmdInitialLobFetchSize;
+        static ManagedOracleAction()
+        {
+            _cmdFetchSize = GetConfigValue<int>("OracleCommandFetchSize", int.TryParse);
+            _cmdInitialLongFetchSize = GetConfigValue<int>("OracleCommandInitialLongFetchSize", int.TryParse);
+            _cmdInitialLobFetchSize = GetConfigValue<int>("OracleCommandInitialLobFetchSize", int.TryParse);
+        }
+
+        private static Nullable<T> GetConfigValue<T>(string key, TryParseDelegate<T> tryParseDelegate) where T : struct
+        {
+            var settingText = System.Configuration.ConfigurationManager.AppSettings.Get(key);
+            T value;
+            if (tryParseDelegate(settingText, out value))
+                return new Nullable<T>(value);
+            return null;
+        }
+        #endregion
         OracleConnection DbConnection
         {
             get { return DBConnection as OracleConnection; }
@@ -38,7 +59,14 @@ namespace Ancestor.DataAccess.DBAction
         }
         OracleCommand DbCommand { get; set; }
         OracleDataAdapter adapter { get; set; }
-
+        int InitialLongFetchSize
+        {
+            get { return _cmdInitialLongFetchSize ?? -1; }
+        }
+        int InitialLobFetchSize
+        {
+            get { return _cmdInitialLobFetchSize ?? -1; }
+        }
         //
         IDbTransaction DbTransaction { get; set; }
         object locker = new object();
@@ -73,6 +101,7 @@ namespace Ancestor.DataAccess.DBAction
         {
             get { return DbCommand?.CommandText; }
         }
+
         public override bool IsTransacting
         {
             get { return DbTransaction != null; }
@@ -104,9 +133,12 @@ namespace Ancestor.DataAccess.DBAction
                 ErrorMessage = string.Empty;
                 DbCommand = DbConnection.CreateCommand();
                 DbCommand.CommandText = sqlString;
+                DbCommand.InitialLONGFetchSize = InitialLongFetchSize;
+                DbCommand.InitialLOBFetchSize = InitialLobFetchSize;
                 adapter = new OracleDataAdapter();
                 DbCommand.BindByName = true;
-                //DbCommand.AddRowid = true;           
+                if (_cmdFetchSize != null)
+                    DbCommand.FetchSize = _cmdFetchSize.Value;
                 if (CheckConnection(DbConnection, DbCommand, testString))
                 {
                     try
@@ -136,8 +168,11 @@ namespace Ancestor.DataAccess.DBAction
                 DbCommand = DbConnection.CreateCommand();
                 DbCommand.CommandText = sqlString;
                 adapter = new OracleDataAdapter();
+                DbCommand.InitialLONGFetchSize = InitialLongFetchSize;
+                DbCommand.InitialLOBFetchSize = InitialLobFetchSize;
                 DbCommand.BindByName = true;
-                //DbCommand.AddRowid = true;
+                if (_cmdFetchSize != null)
+                    DbCommand.FetchSize = _cmdFetchSize.Value;
                 if (CheckConnection(DbConnection, DbCommand, testString))
                 {
                     try
@@ -165,8 +200,11 @@ namespace Ancestor.DataAccess.DBAction
                 DbCommand = DbConnection.CreateCommand();
                 DbCommand.CommandText = sqlString;
                 adapter = new OracleDataAdapter();
+                DbCommand.InitialLONGFetchSize = InitialLongFetchSize;
+                DbCommand.InitialLOBFetchSize = InitialLobFetchSize;
                 DbCommand.BindByName = true;
-                //DbCommand.AddRowid = true;
+                if (_cmdFetchSize != null)
+                    DbCommand.FetchSize = _cmdFetchSize.Value;
                 if (CheckConnection(DbConnection, DbCommand, testString))
                 {
                     try
@@ -194,7 +232,11 @@ namespace Ancestor.DataAccess.DBAction
                 ErrorMessage = string.Empty;
                 DbCommand = DbConnection.CreateCommand();
                 DbCommand.CommandText = sqlString;
+                DbCommand.InitialLONGFetchSize = InitialLongFetchSize;
+                DbCommand.InitialLOBFetchSize = InitialLobFetchSize;
                 DbCommand.BindByName = true;
+                if (_cmdFetchSize != null)
+                    DbCommand.FetchSize = _cmdFetchSize.Value;
                 DbCommand.AddRowid = true;
                 if (CheckConnection(DbConnection, DbCommand, testString))
                 {
@@ -238,8 +280,11 @@ namespace Ancestor.DataAccess.DBAction
                 DbCommand = DbConnection.CreateCommand();
                 DbCommand.CommandText = procedureName;
                 DbCommand.CommandType = CommandType.StoredProcedure;
-                DbCommand.BindByName = bindbyName;
-                //DbCommand.AddRowid = true;
+                DbCommand.InitialLONGFetchSize = InitialLongFetchSize;
+                DbCommand.InitialLOBFetchSize = InitialLobFetchSize;
+                DbCommand.BindByName = true;
+                if (_cmdFetchSize != null)
+                    DbCommand.FetchSize = _cmdFetchSize.Value;
                 if (CheckConnection(DbConnection, DbCommand, testString))
                 {
                     try
