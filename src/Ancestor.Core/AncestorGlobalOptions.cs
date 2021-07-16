@@ -36,10 +36,10 @@ namespace Ancestor.Core
                 _enabledDebug = debug;
             if (bool.TryParse(ConfigurationManager.AppSettings["ancestor.option.lzpw.enable"], out bool lzpw))
                 _lzPw = lzpw;
-            var lzPwDsn = ConfigurationManager.AppSettings["ancestor.option.lzpw.dsn"];
+            var lzPwDsn = ConfigurationManager.AppSettings["ancestor.option.lzpw.node.dsn"];
             if (lzPwDsn != null)
                 _lzPwDataSource = lzPwDsn;
-            var lzPwConnStr = ConfigurationManager.AppSettings["ancestor.option.lzpw.connstr"];
+            var lzPwConnStr = ConfigurationManager.AppSettings["ancestor.option.lzpw.node.connstr"];
             if (lzPwConnStr != null)
                 _lzPwConnectionString = lzPwConnStr;
         }
