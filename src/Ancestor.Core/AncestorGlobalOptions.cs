@@ -14,7 +14,9 @@ namespace Ancestor.Core
         private static string _lzPwSecretNode = "";
         private static string _lzPwSecretNodePref = "LZPWN_";
         private static bool _lzPw = false;
-        private static bool _enabledDebug = false;
+        private static string _lzPwDataSource;
+        private static string _lzPwConnectionString;
+        private static bool _enabledDebug= false;
         static AncestorGlobalOptions()
         {
             if (bool.TryParse(ConfigurationManager.AppSettings["ancestor.option.timeout.enable"], out bool enabled))
@@ -34,6 +36,12 @@ namespace Ancestor.Core
                 _enabledDebug = debug;
             if (bool.TryParse(ConfigurationManager.AppSettings["ancestor.option.lzpw.enable"], out bool lzpw))
                 _lzPw = lzpw;
+            var lzPwDsn = ConfigurationManager.AppSettings["ancestor.option.lzpw.dsn"];
+            if (lzPwDsn != null)
+                _lzPwDataSource = lzPwDsn;
+            var lzPwConnStr = ConfigurationManager.AppSettings["ancestor.option.lzpw.connstr"];
+            if (lzPwConnStr != null)
+                _lzPwConnectionString = lzPwConnStr;
         }
         public static bool Debug
         {
@@ -71,6 +79,16 @@ namespace Ancestor.Core
             set { _lzPw = value; }
         }
 
-        
+        public static string GlobalLazyPasswordDataSource
+        {
+            get { return _lzPwDataSource; }
+            set { _lzPwDataSource = value; }
+        }
+        public static string GlobalLazyPasswordConnectionString
+        {
+            get { return _lzPwConnectionString; }
+            set { _lzPwConnectionString = value; }
+        }
+
     }
 }

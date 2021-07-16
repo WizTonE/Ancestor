@@ -318,17 +318,22 @@ namespace Ancestor.DataAccess.DAO
                         this.Write(", '')");
                         return m;
                     case "IndexOf":
-                        this.Write("(CHARINDEX(");
-                        this.Visit(m.Arguments[0]);
-                        this.Write(", ");
+                        //this.Write("(CHARINDEX(");
+                        //this.Visit(m.Arguments[0]);
+                        //this.Write(", ");
+                        //this.Visit(m.Object);
+                        //if (m.Arguments.Count == 2 && m.Arguments[1].Type == typeof(int))
+                        //{
+                        //    this.Write(", ");
+                        //    this.Visit(m.Arguments[1]);
+                        //    this.Write(_Connector + "1");
+                        //}
+                        //this.Write(") - 1)");
+                        this.Write("(INSTR(");
                         this.Visit(m.Object);
-                        if (m.Arguments.Count == 2 && m.Arguments[1].Type == typeof(int))
-                        {
-                            this.Write(", ");
-                            this.Visit(m.Arguments[1]);
-                            this.Write(_Connector + "1");
-                        }
-                        this.Write(") - 1)");
+                        this.Write(",");
+                        this.Visit(m.Arguments[0]);
+                        this.Write(")-1)");
                         return m;
                     case "Trim":
                         this.Write("RTRIM(LTRIM(");

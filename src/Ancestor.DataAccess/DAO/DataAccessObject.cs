@@ -17,6 +17,7 @@ namespace Ancestor.DataAccess.DAO
         internal string DbSymbolize { get; set; }
         internal string DbLikeSymbolize { get; set; }
         private bool _disposed = false;
+        private object _lastDbParameters;
         /// <summary>DBCommand語法(Debug Only)</summary>
         internal string DBCommand
         {
@@ -25,6 +26,12 @@ namespace Ancestor.DataAccess.DAO
                 return DB?.DbCommandString;
             }
         }
+        [Obsolete("will be delete")]
+        internal object DBParameters
+        {
+            get { return _lastDbParameters; }
+        }
+
         public bool IsTransacting
         {
             get

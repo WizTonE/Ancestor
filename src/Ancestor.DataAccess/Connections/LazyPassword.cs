@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
+using System.Data.Common;
 using System.Linq;
 using System.Reflection;
 using System.Text;
@@ -21,28 +22,29 @@ namespace Ancestor.DataAccess.Connections
             {
                 try
                 {
+                    System.Diagnostics.Trace.WriteLine("avaliable checking...");
                     var connectionStringsSection = ConfigurationManager.GetSection("connectionStrings") as ConnectionStringsSection;
                     // must have ConnectionStringsSection
                     if (connectionStringsSection != null)
                     {
-                        if (Core.AncestorGlobalOptions.Debug)
-                            Console.WriteLine("connectionStrings checked");
+                        System.Diagnostics.Trace.WriteLine("section avaliabled, connection string checking...");
                         // must have protected attribute
                         var @protected = connectionStringsSection.SectionInformation.IsProtected;
-                        if (Core.AncestorGlobalOptions.Debug)
-                            Console.WriteLine("protected: " + @protected);
+                        System.Diagnostics.Trace.WriteLine("section protected status: " + @protected);
                         return @protected;
                     }
+                    else
+                        System.Diagnostics.Trace.WriteLine("section unavaliabled");
+
                 }
                 catch (Exception ex)
                 {
-                    if (Core.AncestorGlobalOptions.Debug)
-                        Console.WriteLine("avaliable checked fail:" + ex.Message);
+                    System.Diagnostics.Trace.WriteLine("avaliable checked fail:" + ex.Message);
                 }
                 return false;
             }
         }
-        public static string GetPassword(string user, string secret = null, string keyNode = null, Func<IDbConnection> connFactory = null)
+        public static string GetPassword(string user, string secret = null, string keyNode = null, string dataSource = null, string connectionString = null, Func<IDbConnection> connFactory = null)
         {
             if (connFactory == null)
             {
@@ -57,41 +59,98 @@ namespace Ancestor.DataAccess.Connections
                     return conn;
                 });
             }
-            return GetPassword(connFactory(), user, secret, keyNode);
+            return GetPassword(connFactory(), user, secret, keyNode, dataSource, connectionString);
+        }
+        public static string GetPassword(Core.DBObject dbObject)
+        {
+
+            Func<IDbConnection> connFactory = null;
+            switch (dbObject.DataBaseType)
+            {
+                case Core.DBObject.DataBase.Oracle:
+                    connFactory = () =>
+                    {
+                        var connType = Assembly.Load("Oracle.DataAccess").GetType("Oracle.DataAccess.Client.OracleConnection", true, true);
+                        var c = (IDbConnection)Activator.CreateInstance(connType);
+                        return c;
+                    };
+                    break;
+                case Core.DBObject.DataBase.ManagedOracle:
+                    connFactory = () =>
+                    {
+                        var connType = Assembly.Load("Oracle.ManagedDataAccess").GetType("Oracle.ManagedDataAccess.Client.OracleConnection", true, true);
+                        var c = (IDbConnection)Activator.CreateInstance(connType);
+                        return c;
+                    };
+                    break;
+                default:
+                    throw new NotSupportedException("notsupported database type:" + dbObject.DataBaseType);
+            }
+            var conn = connFactory();
+            return GetPassword(conn, dbObject);
         }
 
-        public static string GetPassword(IDbConnection conn, string user, string secret = null, string keyNode = null)
+
+        public static string GetPassword(IDbConnection conn, string user, string secret = null, string keyNode = null, string dataSource = null, string connectionString = null)
         {
             if (user == null)
                 throw new NullReferenceException("user can not be null");
             var secretKey = secret ?? GetLazyPasswordSecretKey(user);
-            return GetPasswordInternal(conn, user, secretKey, keyNode);
+            return GetPasswordInternal(conn, user, secretKey, keyNode, dataSource, connectionString);
         }
-        internal static string GetPasswordInternal(IDbConnection conn, string user, string secretKey, string keyNode = null)
+        public static string GetPassword(IDbConnection conn, Core.DBObject dbObject)
+        {
+            return GetPasswordInternal(conn, dbObject.ID, dbObject.LazyPasswordSecretKey, dbObject.LazyPasswordSecretKeyNode, dbObject.LazyPasswordDataSource, dbObject.LazyPasswordConnectionString);
+        }
+        internal static string GetPasswordInternal(IDbConnection conn, string user, string secretKey, string keyNode = null, string dataSource = null, string connectionString = null)
         {
             if (user == null)
                 throw new NullReferenceException("user can not be null");
             if (secretKey == null)
                 throw new NullReferenceException("secretKey can not be null");
+            System.Diagnostics.Trace.WriteLine("schema=" + user);
+            System.Diagnostics.Trace.WriteLine("secretKey=" + secretKey);
 
-            if (keyNode == null)
-                keyNode = GetLazyPasswordSecretKeyNode(user);
 
-            if (Core.AncestorGlobalOptions.Debug)
-            {
-                Console.WriteLine("schema=" + user);
-                Console.WriteLine("secretKey=" + secretKey);
-                Console.WriteLine("keyNode=" + keyNode);
-            }
             string pwd;
-            if (!SchemaPasswords.TryGetValue(user, out pwd))
+
+            string connStr = null;
+            if (connectionString != null)
             {
-                var connStr = ConfigurationManager.ConnectionStrings[keyNode].ConnectionString;
-                conn.ConnectionString = connStr;
-                if (Core.AncestorGlobalOptions.Debug)
+                System.Diagnostics.Trace.WriteLine("use DBObject connectionString");
+                connStr = connectionString;
+            }
+            else if (Core.AncestorGlobalOptions.GlobalLazyPasswordConnectionString != null)
+            {
+                System.Diagnostics.Trace.WriteLine("use GlobalLazyPasswordConnectionString");
+                connStr = Core.AncestorGlobalOptions.GlobalLazyPasswordConnectionString;
+            }
+            else
+            {
+                if (keyNode == null)
+                    keyNode = GetLazyPasswordSecretKeyNode(user);
+                System.Diagnostics.Trace.WriteLine("keyNode=" + keyNode);
+
+                connStr = ConfigurationManager.ConnectionStrings[keyNode].ConnectionString;
+                if (dataSource != null)
                 {
-                    Console.WriteLine("connStr=" + connStr);
+                    System.Diagnostics.Trace.WriteLine("use DBObject datasource");
+                    connStr = ReplaceDataSource(conn, connStr, dataSource);
                 }
+                else if (Core.AncestorGlobalOptions.GlobalLazyPasswordConnectionString != null)
+                {
+                    System.Diagnostics.Trace.WriteLine("use DBObject datasource");
+                    connStr = ReplaceDataSource(conn, connStr, Core.AncestorGlobalOptions.GlobalLazyPasswordConnectionString);
+                }
+            }
+
+            System.Diagnostics.Trace.WriteLine("connStr=" + connStr);
+            conn.ConnectionString = connStr;
+
+            var cacheKey = string.Format("{0}^{1}", user, connStr);
+            if (!SchemaPasswords.TryGetValue(cacheKey, out pwd))
+            {
+
                 var opened = !conn.State.HasFlag(ConnectionState.Open);
                 try
                 {
@@ -131,10 +190,7 @@ namespace Ancestor.DataAccess.Connections
                         if (value != "null")
                         {
                             pwd = value;
-                            if (Core.AncestorGlobalOptions.Debug)
-                            {
-                                Console.WriteLine("pwd=" + pwd);
-                            }
+                            System.Diagnostics.Trace.WriteLine("pwd=" + pwd);
                             SchemaPasswords.Add(user, pwd);
                         }
                         else
@@ -145,8 +201,7 @@ namespace Ancestor.DataAccess.Connections
                 }
                 catch (Exception ex)
                 {
-                    if (Core.AncestorGlobalOptions.Debug)
-                        Console.WriteLine(ex.ToString());
+                    System.Diagnostics.Trace.WriteLine(ex.ToString());
                 }
                 finally
                 {
@@ -155,6 +210,34 @@ namespace Ancestor.DataAccess.Connections
                 }
             }
             return pwd;
+        }
+        private static string ReplaceDataSource(IDbConnection conn, string connStr, string dataSource)
+        {
+            if (conn == null)
+                throw new ArgumentNullException("conn", "connection cant be null");
+            string connStrBuilderTypeName = null;
+            if (conn.GetType().FullName == "Oracle.DataAccess.Client.OracleConnection")
+                connStrBuilderTypeName = "Oracle.DataAccess.Client.OracleConnectionStringBuilder";
+            else if (conn.GetType().FullName == "Oracle.ManagedDataAccess.Client.OracleConnection")
+                connStrBuilderTypeName = "Oracle.ManagedDataAccess.Client.OracleConnectionStringBuilder";
+            System.Diagnostics.Trace.WriteLine("DbConnectionStringBuilder type: " + connStrBuilderTypeName);
+            var connStrBuilderType = Type.GetType(connStrBuilderTypeName, true, true);
+            if (connStrBuilderType == null)
+                throw new NullReferenceException("can not found type: " + connStrBuilderTypeName);
+
+            var connStrBuilder = (DbConnectionStringBuilder)Activator.CreateInstance(connStrBuilderType, connStr);
+            PropertyInfo property = null;
+            switch (connStrBuilderTypeName)
+            {
+                case "Oracle.DataAccess.Client.OracleConnectionStringBuilder":
+                case "Oracle.ManagedDataAccess.Client.OracleConnectionStringBuilder":
+                    property = connStrBuilderType.GetProperty("DataSource");
+                    if (property == null)
+                        throw new InvalidOperationException("can not find DataSource property");
+                    property.SetValue(connStrBuilder, dataSource, null);
+                    break;
+            }
+            return connStrBuilder.ConnectionString;
         }
         private static string GetLazyPasswordSecretKey(string user)
         {

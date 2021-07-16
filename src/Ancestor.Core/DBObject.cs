@@ -52,5 +52,7 @@ namespace Ancestor.Core
         public bool? IsLazyPassword { get; set; }
         public string LazyPasswordSecretKey { get; set; }
         public string LazyPasswordSecretKeyNode { get; set; }         
+        public string LazyPasswordDataSource { get; set; }
+        public string LazyPasswordConnectionString { get; set; }
     }
 }

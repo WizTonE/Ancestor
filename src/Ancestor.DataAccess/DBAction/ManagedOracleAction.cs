@@ -101,6 +101,7 @@ namespace Ancestor.DataAccess.DBAction
         {
             get { return DbCommand?.CommandText; }
         }
+
         public override bool IsTransacting
         {
             get { return DbTransaction != null; }

@@ -39,7 +39,7 @@ namespace Ancestor.DataAccess.Connections
             dBObject = dbObject;
             // 2015-09-02 Renew data source.
             var dataSource = dbObject.IP == null ? dbObject.Node : dbObject.IP;
-            var servicePrefix = dbObject.ServicePrefix ?? "SERVICE_NAME";
+            var servicePrefix = dbObject.ServicePrefix ?? "SID";
             if (dbObject.ConnectedMode == DBObject.Mode.Direct)
                 ConnectionString = @"Data Source=(DESCRIPTION=(ADDRESS_LIST=(ADDRESS=(PROTOCOL=TCP)"
                         + "(HOST=" + dataSource + ")(PORT=1521)))(CONNECT_DATA=(SERVER=DEDICATED)(" + servicePrefix + "=" + dbObject.Node + ")));";
@@ -48,7 +48,7 @@ namespace Ancestor.DataAccess.Connections
 
             if (dbObject.IsLazyPassword ?? AncestorGlobalOptions.GlobalLazyPassword)
             {
-                dbObject.Password = LazyPassword.GetPassword(new OracleConnection(), dbObject.ID, dbObject.LazyPasswordSecretKey, dbObject.LazyPasswordSecretKeyNode);
+                dbObject.Password = LazyPassword.GetPassword(new OracleConnection(), dbObject);
             }
 
             //ConnectionString += "User Id=" + dbObject.ID + ";Password=" + dbObject.Password + ";Pooling=true";
