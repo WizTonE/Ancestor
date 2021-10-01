@@ -92,7 +92,8 @@ namespace Ancestor.DataAccess.DBAction
                     { "TIMESTAMP", OracleDbType.TimeStamp },
                     { "REFCURSOR", OracleDbType.RefCursor },
                     { "CLOB", OracleDbType.Clob },
-                    { "LONG", OracleDbType.Long }
+                    { "LONG", OracleDbType.Long },
+                    { "NUMBER", OracleDbType.Decimal },
                 };
         //
         string testString { get; set; }

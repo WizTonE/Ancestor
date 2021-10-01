@@ -44,6 +44,10 @@ namespace Ancestor.DataAccess.Connections
                 return false;
             }
         }
+        //public static string GetPassword(string user, string secret = null, string keyNode = null, Func<IDbConnection> connFactory = null)
+        //{
+        //    return GetPassword(user, secret, keyNode, null, null, connFactory);
+        //}
         public static string GetPassword(string user, string secret = null, string keyNode = null, string dataSource = null, string connectionString = null, Func<IDbConnection> connFactory = null)
         {
             if (connFactory == null)
@@ -59,7 +63,10 @@ namespace Ancestor.DataAccess.Connections
                     return conn;
                 });
             }
-            return GetPassword(connFactory(), user, secret, keyNode, dataSource, connectionString);
+            using (var conn = connFactory())
+            {
+                return GetPassword(conn, user, secret, keyNode, dataSource, connectionString);
+            }
         }
         public static string GetPassword(Core.DBObject dbObject)
         {
@@ -86,8 +93,11 @@ namespace Ancestor.DataAccess.Connections
                 default:
                     throw new NotSupportedException("notsupported database type:" + dbObject.DataBaseType);
             }
-            var conn = connFactory();
-            return GetPassword(conn, dbObject);
+            using (var conn = connFactory())
+            {
+                return GetPassword(conn, dbObject);
+            }
+
         }
 
 
@@ -100,10 +110,12 @@ namespace Ancestor.DataAccess.Connections
         }
         public static string GetPassword(IDbConnection conn, Core.DBObject dbObject)
         {
-            return GetPasswordInternal(conn, dbObject.ID, dbObject.LazyPasswordSecretKey, dbObject.LazyPasswordSecretKeyNode, dbObject.LazyPasswordDataSource, dbObject.LazyPasswordConnectionString);
+            return GetPassword(conn, dbObject.ID, dbObject.LazyPasswordSecretKey, dbObject.LazyPasswordSecretKeyNode, dbObject.LazyPasswordDataSource, dbObject.LazyPasswordConnectionString);
         }
         internal static string GetPasswordInternal(IDbConnection conn, string user, string secretKey, string keyNode = null, string dataSource = null, string connectionString = null)
         {
+            if (conn == null)
+                throw new NullReferenceException("conn can not be null");
             if (user == null)
                 throw new NullReferenceException("user can not be null");
             if (secretKey == null)
@@ -134,15 +146,18 @@ namespace Ancestor.DataAccess.Connections
                 connStr = ConfigurationManager.ConnectionStrings[keyNode].ConnectionString;
                 if (dataSource != null)
                 {
-                    System.Diagnostics.Trace.WriteLine("use DBObject datasource");
+                    System.Diagnostics.Trace.WriteLine("use DBObject datasource: " + dataSource);
                     connStr = ReplaceDataSource(conn, connStr, dataSource);
                 }
-                else if (Core.AncestorGlobalOptions.GlobalLazyPasswordConnectionString != null)
+                else if (Core.AncestorGlobalOptions.GlobalLazyPasswordDataSource != null)
                 {
-                    System.Diagnostics.Trace.WriteLine("use DBObject datasource");
-                    connStr = ReplaceDataSource(conn, connStr, Core.AncestorGlobalOptions.GlobalLazyPasswordConnectionString);
+                    System.Diagnostics.Trace.WriteLine("use GlobalLazyPasswordDataSource: " + Core.AncestorGlobalOptions.GlobalLazyPasswordDataSource);
+                    connStr = ReplaceDataSource(conn, connStr, Core.AncestorGlobalOptions.GlobalLazyPasswordDataSource);
                 }
             }
+
+            //TODO: Replace MaxPoolSize
+            connStr = ReplaceConnectionProperty(conn, connStr);
 
             System.Diagnostics.Trace.WriteLine("connStr=" + connStr);
             conn.ConnectionString = connStr;
@@ -150,7 +165,6 @@ namespace Ancestor.DataAccess.Connections
             var cacheKey = string.Format("{0}^{1}", user, connStr);
             if (!SchemaPasswords.TryGetValue(cacheKey, out pwd))
             {
-
                 var opened = !conn.State.HasFlag(ConnectionState.Open);
                 try
                 {
@@ -191,11 +205,11 @@ namespace Ancestor.DataAccess.Connections
                         {
                             pwd = value;
                             System.Diagnostics.Trace.WriteLine("pwd=" + pwd);
-                            SchemaPasswords.Add(user, pwd);
+                            SchemaPasswords.Add(cacheKey, pwd);
                         }
                         else
                         {
-                            SchemaPasswords.Add(user, null);
+                            SchemaPasswords.Add(cacheKey, null);
                         }
                     }
                 }
@@ -206,7 +220,17 @@ namespace Ancestor.DataAccess.Connections
                 finally
                 {
                     if (conn.State.HasFlag(ConnectionState.Open) && opened)
+                    {
+
+                        System.Diagnostics.Trace.WriteLine("close conection and clear pool");
                         conn.Close();
+
+                        //TODO: do not use oracle conn
+                        if (conn is Oracle.DataAccess.Client.OracleConnection)
+                            Oracle.DataAccess.Client.OracleConnection.ClearPool(conn as Oracle.DataAccess.Client.OracleConnection);
+                        else if (conn is Oracle.ManagedDataAccess.Client.OracleConnection)
+                            Oracle.ManagedDataAccess.Client.OracleConnection.ClearPool(conn as Oracle.ManagedDataAccess.Client.OracleConnection);
+                    }
                 }
             }
             return pwd;
@@ -221,7 +245,7 @@ namespace Ancestor.DataAccess.Connections
             else if (conn.GetType().FullName == "Oracle.ManagedDataAccess.Client.OracleConnection")
                 connStrBuilderTypeName = "Oracle.ManagedDataAccess.Client.OracleConnectionStringBuilder";
             System.Diagnostics.Trace.WriteLine("DbConnectionStringBuilder type: " + connStrBuilderTypeName);
-            var connStrBuilderType = Type.GetType(connStrBuilderTypeName, true, true);
+            var connStrBuilderType = conn.GetType().Assembly.GetType(connStrBuilderTypeName, true, true);
             if (connStrBuilderType == null)
                 throw new NullReferenceException("can not found type: " + connStrBuilderTypeName);
 
@@ -235,6 +259,37 @@ namespace Ancestor.DataAccess.Connections
                     if (property == null)
                         throw new InvalidOperationException("can not find DataSource property");
                     property.SetValue(connStrBuilder, dataSource, null);
+                    break;
+            }
+            return connStrBuilder.ConnectionString;
+        }
+        private static string ReplaceConnectionProperty(IDbConnection conn, string connStr)
+        {
+            if (conn == null)
+                throw new ArgumentNullException("conn", "connection cant be null");
+            string connStrBuilderTypeName = null;
+            if (conn.GetType().FullName == "Oracle.DataAccess.Client.OracleConnection")
+                connStrBuilderTypeName = "Oracle.DataAccess.Client.OracleConnectionStringBuilder";
+            else if (conn.GetType().FullName == "Oracle.ManagedDataAccess.Client.OracleConnection")
+                connStrBuilderTypeName = "Oracle.ManagedDataAccess.Client.OracleConnectionStringBuilder";
+            System.Diagnostics.Trace.WriteLine("DbConnectionStringBuilder type: " + connStrBuilderTypeName);
+            var connStrBuilderType = conn.GetType().Assembly.GetType(connStrBuilderTypeName, true, true);
+            if (connStrBuilderType == null)
+                throw new NullReferenceException("can not found type: " + connStrBuilderTypeName);
+            var connStrBuilder = (DbConnectionStringBuilder)Activator.CreateInstance(connStrBuilderType, connStr);
+            //PropertyInfo propertyMinPool = null;
+            PropertyInfo propertyPooling = null;
+
+            switch (connStrBuilderTypeName)
+            {
+                case "Oracle.DataAccess.Client.OracleConnectionStringBuilder":
+                case "Oracle.ManagedDataAccess.Client.OracleConnectionStringBuilder":
+                    //propertyMinPool = connStrBuilderType.GetProperty("MinPoolSize");
+                    //if (propertyMinPool != null)
+                    //    propertyMinPool.SetValue(connStrBuilder, 0, null);
+                    propertyPooling = connStrBuilderType.GetProperty("Pooling");
+                    if (propertyPooling != null)
+                        propertyPooling.SetValue(connStrBuilder, false, null);
                     break;
             }
             return connStrBuilder.ConnectionString;

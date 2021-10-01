@@ -14,6 +14,7 @@ using System.Linq.Expressions;
 using Ancestor.DataAccess.SqlMapper;
 using Ancestor.DataAccess.Interface;
 using System.IO;
+using System.Threading;
 
 namespace Ancestor.DataAccess.DBAction
 {
@@ -95,7 +96,8 @@ namespace Ancestor.DataAccess.DBAction
                     { "TIMESTAMP", OracleDbType.TimeStamp },
                     { "REFCURSOR", OracleDbType.RefCursor },
                     { "CLOB", OracleDbType.Clob },
-                    { "LONG", OracleDbType.Long }
+                    { "LONG", OracleDbType.Long },
+                    { "NUMBER", OracleDbType.Decimal },
                 };
         //
         string testString { get; set; }
@@ -132,11 +134,19 @@ namespace Ancestor.DataAccess.DBAction
             private bool _disposed = false;
             private System.Timers.Timer _timer;
             public TimeoutObject()
-            {
+            {                
                 if (AncestorGlobalOptions.EnableTimeout)
-                {
+                {                    
                     _timer = new System.Timers.Timer(AncestorGlobalOptions.TimeoutInterval);
-                    _timer.Elapsed += (s, e) => throw new TimeoutException("execute timeout on " + e.SignalTime.ToString("yyyy/MM/dd HH:mm:ss"));
+                    _timer.AutoReset = false;
+                    _timer.Elapsed += (s, e) =>
+                    {
+                        if (!_disposed)
+                        {
+                            var message = "execute timeout on " + e.SignalTime.ToString("yyyy/MM/dd HH:mm:ss");
+                            throw new TimeoutException(message);
+                        }
+                    };
                     _timer.Start();
                 }
             }

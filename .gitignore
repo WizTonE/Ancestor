@@ -244,3 +244,4 @@ ModelManifest.xml
 /locals/*
 LocalDemo.sln
 ConsoleApp1/
+/build.ps1
