@@ -1,0 +1,19 @@
+﻿<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/10/nuspec.xsd">
+  <metadata>
+    <id>Ancestor.DataAccess</id>
+    <title>Ancestor.DataAccess</title>
+	<projectUrl>https://wiztone.github.io/Ancestor/</projectUrl>
+    <version>1.4.14.1</version>    
+    <authors>Ancestor Team</authors>
+    <description>Ancestor Lib</description>   
+    <copyright>Ancestor Team</copyright>	
+	<releaseNotes>https://github.com/WizTonE/Ancestor/releases/</releaseNotes>
+    <dependencies>
+      <dependency id="Ancestor.Core" version="1.4.14.0" />
+    </dependencies>
+  </metadata>
+  <files>
+	<file src="src\Ancestor.DataAccess\bin\Release\Ancestor.DataAccess.dll" target="lib\net40" />
+  </files>
+</package>

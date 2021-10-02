@@ -222,14 +222,17 @@ namespace Ancestor.DataAccess.Connections
                     if (conn.State.HasFlag(ConnectionState.Open) && opened)
                     {
 
-                        System.Diagnostics.Trace.WriteLine("close conection and clear pool");
+                        System.Diagnostics.Trace.WriteLine("close conection");
                         conn.Close();
 
-                        //TODO: do not use oracle conn
-                        if (conn is Oracle.DataAccess.Client.OracleConnection)
-                            Oracle.DataAccess.Client.OracleConnection.ClearPool(conn as Oracle.DataAccess.Client.OracleConnection);
-                        else if (conn is Oracle.ManagedDataAccess.Client.OracleConnection)
-                            Oracle.ManagedDataAccess.Client.OracleConnection.ClearPool(conn as Oracle.ManagedDataAccess.Client.OracleConnection);
+
+                        // clear pool
+                        var mClearPool = conn.GetType().GetMethod("ClearPool", BindingFlags.Public | BindingFlags.Static);
+                        if(mClearPool != null)
+                        {
+                            System.Diagnostics.Trace.WriteLine("clear pool");
+                            mClearPool.Invoke(null, new object[] { conn });
+                        }
                     }
                 }
             }
