@@ -8,6 +8,11 @@ namespace Ancestor.Core
     //10g ref: https://docs.oracle.com/cd/B19306_01/win.102/b14307/featConnecting.htm
     public class OracleConnectionString : IConnectionString
     {
+        public OracleConnectionString()
+        {
+            Pooling = true;
+            Max_Pool_Size = 10;
+        }
         public int? Connection_Lifetime { get; set; }
         public int? Connection_Timeout { get; set; }
         public bool? Context_Connection { get; set; }
@@ -16,10 +21,8 @@ namespace Ancestor.Core
         public int? Enlist { get; set; }
         public bool? HA_Events { get; set; }
         public bool? Load_Balancing { get; set; }
-        public int? Incr_Pool_Size { get; set; }
-        [Default(true)]
+        public int? Incr_Pool_Size { get; set; }        
         public bool? Pooling { set; get; }
-        [Default(10)]
         public int? Max_Pool_Size { get; set; }
         public int? Min_Pool_Size { get; set; }
         public bool? Persist_Security_Info { get; set; }        

@@ -20,8 +20,8 @@ namespace Ancestor.DataAccess.DBAction
     public abstract class BaseAbstractAction : DbAction, IDbAction
     {
         private bool _disposed = false;
-
         public virtual IDbTransaction DbTransaction { get; set; }
+
 
         #region Virtual Function
         protected virtual IDbConnection DBConnection { set; get; }
@@ -151,6 +151,7 @@ namespace Ancestor.DataAccess.DBAction
             return Query(sqlString, parameterCollection, ref dataList, realType);
         }
         #endregion
+
 
         ~BaseAbstractAction()
         {

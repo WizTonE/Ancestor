@@ -225,13 +225,16 @@ namespace Ancestor.DataAccess.Connections
                         System.Diagnostics.Trace.WriteLine("close conection");
                         conn.Close();
 
-
-                        // clear pool
-                        var mClearPool = conn.GetType().GetMethod("ClearPool", BindingFlags.Public | BindingFlags.Static);
-                        if(mClearPool != null)
+                        // check if needs to clear pool, will ignore when using web
+                        if (Core.AncestorGlobalOptions.LazyPasswordEnableClearPool)
                         {
-                            System.Diagnostics.Trace.WriteLine("clear pool");
-                            mClearPool.Invoke(null, new object[] { conn });
+                            // clear pool
+                            var mClearPool = conn.GetType().GetMethod("ClearPool", BindingFlags.Public | BindingFlags.Static);
+                            if (mClearPool != null)
+                            {
+                                System.Diagnostics.Trace.WriteLine("clear pool");
+                                mClearPool.Invoke(null, new object[] { conn });
+                            }
                         }
                     }
                 }

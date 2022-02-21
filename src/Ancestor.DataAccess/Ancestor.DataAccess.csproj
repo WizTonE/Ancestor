@@ -76,6 +76,7 @@
     <Compile Include="Connections\LazyPassword.cs" />
     <Compile Include="Connections\OleDBConnection.cs" />
     <Compile Include="Connections\ManagedOracleDBConnection.cs" />
+    <Compile Include="DAO\DaoExtensions.cs" />
     <Compile Include="DAO\OleDao.cs" />
     <Compile Include="DAO\ManagedOracleDao.cs" />
     <Compile Include="DBAction\AncestorTransaction.cs" />

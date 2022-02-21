@@ -698,8 +698,14 @@ namespace Ancestor.DataAccess.DBAction
         }
         private void CloseConnection()
         {
+
             if (DbTransaction == null)
-                DbConnection.Close();
+            {
+                if (GetAutoClose())
+                {
+                    DbConnection.Close();
+                }
+            }
         }
         protected override void Disposing()
         {

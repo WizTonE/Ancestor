@@ -17,9 +17,14 @@ namespace Ancestor.Core
         private static string _lzPwDataSource;
         private static string _lzPwConnectionString;
         private static bool _enabledDebug= false;
+        private static bool _lzPwEnabledClearPool = true;
+        private static bool _autoClose = true;
+        private static bool _validateConn = true;
+
         static AncestorGlobalOptions()
         {
-            if (bool.TryParse(ConfigurationManager.AppSettings["ancestor.option.timeout.enable"], out bool enabled))
+            bool enabled;
+            if (bool.TryParse(ConfigurationManager.AppSettings["ancestor.option.timeout.enable"], out enabled))
                 _enabledTimeout = enabled;
             if (int.TryParse(ConfigurationManager.AppSettings["ancestor.option.timeout.interval"], out int interval))
                 _timeoutInterval = interval;
@@ -42,6 +47,13 @@ namespace Ancestor.Core
             var lzPwConnStr = ConfigurationManager.AppSettings["ancestor.option.lzpw.node.connstr"];
             if (lzPwConnStr != null)
                 _lzPwConnectionString = lzPwConnStr;
+            if (bool.TryParse(ConfigurationManager.AppSettings["ancestor.option.lzpw.clearpool"], out enabled))
+                _lzPwEnabledClearPool = enabled;
+            var closeType = ConfigurationManager.AppSettings["ancestor.option.close"];
+            if ("manual".Equals(closeType, StringComparison.OrdinalIgnoreCase))
+                _autoClose = false;
+            if (bool.TryParse(ConfigurationManager.AppSettings["ancestor.option.validatable"], out enabled))
+                _validateConn = enabled;
         }
         public static bool Debug
         {
@@ -90,5 +102,20 @@ namespace Ancestor.Core
             set { _lzPwConnectionString = value; }
         }
 
+        public static bool LazyPasswordEnableClearPool
+        {
+            get { return _lzPwEnabledClearPool; }
+            set { _lzPwEnabledClearPool = value; }
+        }
+        public static bool AutoClose
+        {
+            get { return _autoClose; }
+            set { _autoClose = value; }
+        }
+        public static bool ValidateConnection
+        {
+            get { return _validateConn; }
+            set { _validateConn = value; }
+        }
     }
 }

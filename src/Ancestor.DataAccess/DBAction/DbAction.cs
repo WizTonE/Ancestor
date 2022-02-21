@@ -21,16 +21,26 @@ namespace Ancestor.DataAccess.DBAction
         {
             get { throw new NotImplementedException(); }
         }
+        public bool? AutoClosed { get; set; }
+        public bool? Validatable { get; set; }
+        protected bool GetAutoClose()
+        {
+            return AutoClosed ?? AncestorGlobalOptions.AutoClose;
+        }
+        protected bool GetValidatable()
+        {
+            return Validatable ?? AncestorGlobalOptions.ValidateConnection;
+        }
         protected bool CheckConnection(IDbConnection dbConnection, IDbCommand dataCommand, string testString)
         {
-            bool isConn;
+            bool isConn = false;
             //string Error_msg = string.Empty;
             //OracleConnection ClonedCon = (OracleConnection)DB_Connection.Clone();
             if (dbConnection.State != ConnectionState.Open)
             {
                 isConn = Connect(dbConnection);
             }
-            else
+            else if(GetValidatable())
             {
                 if (ValidateConnection(dbConnection, dataCommand, testString))
                     isConn = true;
@@ -40,7 +50,6 @@ namespace Ancestor.DataAccess.DBAction
                     isConn = Connect(dbConnection);
                 }
             }
-
             return isConn;
         }
 

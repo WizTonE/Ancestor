@@ -4,13 +4,13 @@
     <id>Ancestor.Core</id>
     <title>Ancestor.Core</title>
     <projectUrl>https://wiztone.github.io/Ancestor/</projectUrl>
-    <version>1.4.14.1</version>    
+    <version>1.4.14.6</version>    
     <authors>Ancestor Team</authors>
     <description>Ancestor Lib</description>   
     <copyright>Ancestor Team</copyright>	
 	<releaseNotes>https://github.com/WizTonE/Ancestor/releases/</releaseNotes>
   </metadata>
   <files>
-	<file src="src\Ancestor.DataAccess\bin\Release\Ancestor.Core.dll" target="lib\net40" />
+	<file src="Ancestor.Core.dll" target="lib\net40" />
   </files>
 </package>
