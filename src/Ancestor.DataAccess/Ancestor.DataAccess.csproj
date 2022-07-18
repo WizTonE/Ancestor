@@ -154,7 +154,6 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Ancestor.DataAccess.nuspec" />
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
