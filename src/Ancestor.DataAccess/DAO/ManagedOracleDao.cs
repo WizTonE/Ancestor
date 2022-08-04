@@ -916,6 +916,9 @@ namespace Ancestor.DataAccess.DAO
                 var oracleType = (OracleDbType)GetDbTypeFromType(propertyType);
                 OracleParameter oracleParameter = null;
                 var value = prop.GetValue(valueObject, null);
+                var pname = DbSymbolize + UpdateParameterPrefix + prop.Name.ToUpper();
+                if (pname.Length > 25)
+                    pname = pname.Substring(0, 20) + "_RY";
                 //如果有找到難字註記
                 if (findHardWord && oracleType == OracleDbType.Varchar2)
                 {
@@ -924,22 +927,22 @@ namespace Ancestor.DataAccess.DAO
                         oracleType = OracleDbType.Raw;
                         var str = value.ToString();
                         SqlString.Append(string.Format("{1} = UTL_RAW.CAST_TO_VARCHAR2({0}),",
-                               DbSymbolize + UpdateParameterPrefix + prop.Name.ToUpper(),
+                               pname,
                                prop.Name.ToUpper()));
-                        oracleParameter = new OracleParameter(DbSymbolize + UpdateParameterPrefix + prop.Name.ToUpper(), oracleType, hardWord.Encoding.GetBytes(str), ParameterDirection.Input);
+                        oracleParameter = new OracleParameter(pname, oracleType, hardWord.Encoding.GetBytes(str), ParameterDirection.Input);
                     }
                     else
                     {
-                        SqlString.Append(prop.Name.ToUpper() + " = " + DbSymbolize + UpdateParameterPrefix + prop.Name.ToUpper() + ",");
-                        oracleParameter = new OracleParameter(DbSymbolize + UpdateParameterPrefix + prop.Name.ToUpper(), oracleType, DBNull.Value, ParameterDirection.Input);
+                        SqlString.Append(prop.Name.ToUpper() + " = " + pname + ",");
+                        oracleParameter = new OracleParameter(pname, oracleType, DBNull.Value, ParameterDirection.Input);
                     }
 
                 }
                 //若沒有找到
                 else
                 {
-                    SqlString.Append(prop.Name.ToUpper() + " = " + DbSymbolize + UpdateParameterPrefix + prop.Name.ToUpper() + ",");
-                    oracleParameter = new OracleParameter(DbSymbolize + UpdateParameterPrefix + prop.Name.ToUpper(), oracleType, value, ParameterDirection.Input);
+                    SqlString.Append(prop.Name.ToUpper() + " = " + pname + ",");
+                    oracleParameter = new OracleParameter(pname, oracleType, value, ParameterDirection.Input);
                 }
                 parameters.Add(oracleParameter);
             }
