@@ -179,7 +179,8 @@ namespace Ancestor.DataAccess.DBAction
                 DbRollBack();
                 DbTransaction = null;
             }
-
+            DBConnection.Dispose();
+            DBConnection = null;
         }
     }
 }
