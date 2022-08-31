@@ -4,13 +4,13 @@
     <id>Ancestor.DataAccess</id>
     <title>Ancestor.DataAccess</title>
 	<projectUrl>https://wiztone.github.io/Ancestor/</projectUrl>
-    <version>1.4.14.6</version>    
+    <version>1.4.15.1</version>    
     <authors>Ancestor Team</authors>
     <description>Ancestor Lib</description>   
     <copyright>Ancestor Team</copyright>	
 	<releaseNotes>https://github.com/WizTonE/Ancestor/releases/</releaseNotes>
     <dependencies>
-      <dependency id="Ancestor.Core" version="1.4.14.6" />
+      <dependency id="Ancestor.Core" version="1.4.15.0" />
     </dependencies>
   </metadata>
   <files>
